@@ -55,15 +55,15 @@
   "dependencies": {
     "constructs": "^3.0.2",
     "@aws-cdk/core": "0.0.0",
-    "@aws-cdk/aws-codebuild": "0.0.0",
-    "@aws-cdk/aws-codepipeline": "0.0.0",
-    "@aws-cdk/aws-codepipeline-actions": "0.0.0",
+    "@aws-cdk/aws-codebuild": "0.39.0",
+    "@aws-cdk/aws-codepipeline": "0.39.0",
+    "@aws-cdk/aws-codepipeline-actions": "0.39.0",
     "@aws-cdk/cloud-assembly-schema": "0.0.0",
     "@aws-cdk/aws-events": "0.0.0",
     "@aws-cdk/aws-iam": "0.0.0",
-    "@aws-cdk/aws-s3-assets": "0.0.0",
+    "@aws-cdk/aws-s3-assets": "0.39.0",
     "@aws-cdk/cx-api": "0.0.0",
-    "@aws-cdk/aws-cloudformation": "0.0.0"
+    "@aws-cdk/aws-cloudformation": "0.39.0"
   },
   "bundledDependencies": [],
   "keywords": [
