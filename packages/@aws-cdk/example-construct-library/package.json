@@ -67,12 +67,12 @@
     "pkglint": "0.0.0"
   },
   "dependencies": {
-    "@aws-cdk/aws-cloudwatch": "0.0.0",
-    "@aws-cdk/aws-ec2": "0.0.0",
-    "@aws-cdk/aws-events": "0.0.0",
-    "@aws-cdk/aws-iam": "0.0.0",
-    "@aws-cdk/aws-s3": "0.0.0",
-    "@aws-cdk/core": "0.0.0",
+    "@aws-cdk/aws-cloudwatch": "0.39.0",
+    "@aws-cdk/aws-ec2": "0.39.0",
+    "@aws-cdk/aws-events": "0.39.0",
+    "@aws-cdk/aws-iam": "0.39.0",
+    "@aws-cdk/aws-s3": "0.39.0",
+    "@aws-cdk/core": "0.39.0",
     "constructs": "^3.0.2"
   },
   "homepage": "https://github.com/aws/aws-cdk",
