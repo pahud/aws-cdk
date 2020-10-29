@@ -59,6 +59,7 @@ export class PatchedSharedIniFileCredentials extends AWS.SharedIniFileCredential
     var mfaSerial = roleProfile.mfa_serial;
     var sourceProfile = roleProfile.source_profile;
     var credentialSource = roleProfile.credential_source;
+    var credentialProcess = roleProfile.credential_process;
 
     const credentialError = (AWS as any).util.error(
       new Error(`When using 'role_arn' in profile ('${this.profile}'), you must also configure exactly one of 'source_profile' or 'credential_source'`),
@@ -76,7 +77,9 @@ export class PatchedSharedIniFileCredentials extends AWS.SharedIniFileCredential
     const profiles = loadProfilesProper(this.filename);
     const region = profiles[this.profile]?.region ?? profiles.default?.region ?? 'us-east-1';
 
-    const stsCreds = sourceProfile ? this.sourceProfileCredentials(sourceProfile, creds) : this.credentialSourceCredentials(credentialSource);
+    const stsCreds = credentialProcess ? this.credentialProcessCredentials(this.profile)
+      : sourceProfile ? this.sourceProfileCredentials(sourceProfile, creds)
+        : this.credentialSourceCredentials(credentialSource);
 
     this.roleArn = roleArn;
     var sts = new AWS.STS({
@@ -162,6 +165,9 @@ export class PatchedSharedIniFileCredentials extends AWS.SharedIniFileCredential
       }
     }
 
+  }
+  private credentialProcessCredentials(profile: string) {
+    return new AWS.ProcessCredentials({ profile });
   }
 }
 

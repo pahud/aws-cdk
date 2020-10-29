@@ -58,7 +58,6 @@ export class AwsCliCompatible {
       // environment variable.
       await forceSdkToReadConfigIfPresent();
       sources.push(() => profileCredentials(implicitProfile));
-      sources.push(() => new AWS.ProcessCredentials({ profile: implicitProfile }));
     }
 
     if (options.containerCreds ?? hasEcsCredentials()) {
