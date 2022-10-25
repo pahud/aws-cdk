@@ -147,6 +147,78 @@ We welcome community contributions and pull requests. See
 [CONTRIBUTING.md](./CONTRIBUTING.md) for information on how to set up a development
 environment and submit code.
 
+Thanks goes to these wonderful top community contributors:
+
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1080-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+<table>
+<tr>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/12623249?v=4" width="100px;" alt=""/><br /><sub><b>Jonathan Goldwasser</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=jogold" title="distinguished-contributor(322 merged PRs)">💻</a></td>
+<td align="center"><a href="http://eladb.github.com"><img src="https://avatars.githubusercontent.com/u/598796?v=4" width="100px;" alt=""/><br /><sub><b>Elad Ben-Israel</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=eladb" title="distinguished-contributor(316 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/16217941?v=4" width="100px;" alt=""/><br /><sub><b>Niranjan Jayakar</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=nija-at" title="distinguished-contributor(310 merged PRs)">💻</a></td>
+<td align="center"><a href="http://endoflineblog.com"><img src="https://avatars.githubusercontent.com/u/460937?v=4" width="100px;" alt=""/><br /><sub><b>Adam Ruka</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=skinny85" title="distinguished-contributor(290 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/1376292?v=4" width="100px;" alt=""/><br /><sub><b>Nick Lynch</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=njlynch" title="distinguished-contributor(246 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/32604953?v=4" width="100px;" alt=""/><br /><sub><b>Shiv Lakshminarayan</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=shivlaks" title="distinguished-contributor(185 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/31543?v=4" width="100px;" alt=""/><br /><sub><b>Robert Djurasaj</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=robertd" title="distinguished-contributor(86 merged PRs)">💻</a></td>
+</tr>
+<tr>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/8578043?v=4" width="100px;" alt=""/><br /><sub><b>Neta Nir</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=NetaNir" title="distinguished-contributor(83 merged PRs)">💻</a></td>
+<td align="center"><a href="http://nmussy.github.io/"><img src="https://avatars.githubusercontent.com/u/2505696?v=4" width="100px;" alt=""/><br /><sub><b>Jimmy Gaussen</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=nmussy" title="distinguished-contributor(55 merged PRs)">💻</a></td>
+<td align="center"><a href="linktr.ee/hoegertn"><img src="https://avatars.githubusercontent.com/u/1287829?v=4" width="100px;" alt=""/><br /><sub><b>Thorsten Hoeger</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=hoegertn" title="star-contributor(49 merged PRs)">💻</a></td>
+<td align="center"><a href="https://www.linkedin.com/in/julianmichel2/"><img src="https://avatars.githubusercontent.com/u/15660169?v=4" width="100px;" alt=""/><br /><sub><b>Julian Michel</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=jumic" title="star-contributor(48 merged PRs)">💻</a></td>
+<td align="center"><a href="ayush987goyal.dev"><img src="https://avatars.githubusercontent.com/u/5697227?v=4" width="100px;" alt=""/><br /><sub><b>Ayush Goyal</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=ayush987goyal" title="star-contributor(45 merged PRs)">💻</a></td>
+<td align="center"><a href="bryanpan.co"><img src="https://avatars.githubusercontent.com/u/44623317?v=4" width="100px;" alt=""/><br /><sub><b>Bryan Pan</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=BryanPan342" title="star-contributor(41 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/11013683?v=4" width="100px;" alt=""/><br /><sub><b>Tatsuya Yamamoto</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=yamatatsu" title="star-contributor(39 merged PRs)">💻</a></td>
+</tr>
+<tr>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/44981951?v=4" width="100px;" alt=""/><br /><sub><b>Piradeep Kandasamy</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=piradeepk" title="star-contributor(37 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/23043132?v=4" width="100px;" alt=""/><br /><sub><b>Somaya</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=SomayaB" title="star-contributor(35 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/29964746?v=4" width="100px;" alt=""/><br /><sub><b>Hsing-Hui Hsu</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=SoManyHs" title="star-contributor(34 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/3698184?v=4" width="100px;" alt=""/><br /><sub><b>Ben Chaimberg</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=BenChaimberg" title="star-contributor(29 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/57235867?v=4" width="100px;" alt=""/><br /><sub><b>None</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=flemjame-at-amazon" title="star-contributor(27 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/644092?v=4" width="100px;" alt=""/><br /><sub><b>Josh Kellendonk</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=misterjoshua" title="admired-contributor(24 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/57131123?v=4" width="100px;" alt=""/><br /><sub><b>Joshua Weber</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=daschaa" title="admired-contributor(22 merged PRs)">💻</a></td>
+</tr>
+<tr>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/51377557?v=4" width="100px;" alt=""/><br /><sub><b>Penghao He</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=iamhopaul123" title="admired-contributor(22 merged PRs)">💻</a></td>
+<td align="center"><a href="public.dev/sam"><img src="https://avatars.githubusercontent.com/u/38672686?v=4" width="100px;" alt=""/><br /><sub><b>sam</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=sam-goodwin" title="admired-contributor(21 merged PRs)">💻</a></td>
+<td align="center"><a href="https://rybicki.io/"><img src="https://avatars.githubusercontent.com/u/5008987?v=4" width="100px;" alt=""/><br /><sub><b>Chris Rybicki</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=Chriscbr" title="admired-contributor(19 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/1659030?v=4" width="100px;" alt=""/><br /><sub><b>Alban Escalier</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=DaWyz" title="admired-contributor(19 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/527924?v=4" width="100px;" alt=""/><br /><sub><b>Christoph Gysin</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=christophgysin" title="admired-contributor(17 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/16107690?v=4" width="100px;" alt=""/><br /><sub><b>Doug</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=Doug-AWS" title="admired-contributor(17 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/76135106?v=4" width="100px;" alt=""/><br /><sub><b>watany</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=watany-dev" title="admired-contributor(17 merged PRs)">💻</a></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kylelaker.com"><img src="https://avatars.githubusercontent.com/u/850893?v=4" width="100px;" alt=""/><br /><sub><b>Kyle Laker</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=kylelaker" title="admired-contributor(16 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/53624638?v=4" width="100px;" alt=""/><br /><sub><b>Daniel Neilson</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=ddneilson" title="admired-contributor(16 merged PRs)">💻</a></td>
+<td align="center"><a href="patmyron.com"><img src="https://avatars.githubusercontent.com/u/7014355?v=4" width="100px;" alt=""/><br /><sub><b>Pat Myron</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=PatMyron" title="admired-contributor(16 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/29872445?v=4" width="100px;" alt=""/><br /><sub><b>None</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=arcrank" title="admired-contributor(15 merged PRs)">💻</a></td>
+<td align="center"><a href="https://benlimmer.com"><img src="https://avatars.githubusercontent.com/u/630449?v=4" width="100px;" alt=""/><br /><sub><b>Ben Limmer</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=blimmer" title="admired-contributor(15 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/5962998?v=4" width="100px;" alt=""/><br /><sub><b>Kyle Roach</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=iRoachie" title="admired-contributor(14 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/892367?v=4" width="100px;" alt=""/><br /><sub><b>Simon-Pierre Gingras</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=spg" title="admired-contributor(14 merged PRs)">💻</a></td>
+</tr>
+<tr>
+<td align="center"><a href="https://clare.dev/"><img src="https://avatars.githubusercontent.com/u/484245?v=4" width="100px;" alt=""/><br /><sub><b>Clare Liguori</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=clareliguori" title="admired-contributor(14 merged PRs)">💻</a></td>
+<td align="center"><a href="https://kane.mx"><img src="https://avatars.githubusercontent.com/u/843303?v=4" width="100px;" alt=""/><br /><sub><b>Meng Xin Zhu</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=zxkane" title="admired-contributor(14 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/664280?v=4" width="100px;" alt=""/><br /><sub><b>Mike Cowgill</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=moofish32" title="admired-contributor(14 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/4944099?v=4" width="100px;" alt=""/><br /><sub><b>Noah Litov</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=NGL321" title="admired-contributor(13 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/12930371?v=4" width="100px;" alt=""/><br /><sub><b>None</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=Seiya6329" title="admired-contributor(13 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/80710604?v=4" width="100px;" alt=""/><br /><sub><b>Unnati Parekh</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=upparekh" title="valued-contributor(12 merged PRs)">💻</a></td>
+<td align="center"><a href="https://tmokmss.hatenablog.com/"><img src="https://avatars.githubusercontent.com/u/7490655?v=4" width="100px;" alt=""/><br /><sub><b>Masashi Tomooka</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=tmokmss" title="valued-contributor(12 merged PRs)">💻</a></td>
+</tr>
+<tr>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/7794947?v=4" width="100px;" alt=""/><br /><sub><b>Florian Eitel</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=workeitel" title="valued-contributor(12 merged PRs)">💻</a></td>
+<td align="center"><a href="http://ericzbeard.com"><img src="https://avatars.githubusercontent.com/u/663183?v=4" width="100px;" alt=""/><br /><sub><b>Eric Z. Beard</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=ericzbeard" title="valued-contributor(12 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/16692560?v=4" width="100px;" alt=""/><br /><sub><b>None</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=markussiebert" title="valued-contributor(11 merged PRs)">💻</a></td>
+<td align="center"><a href="https://resume.kirintw.me"><img src="https://avatars.githubusercontent.com/u/11881669?v=4" width="100px;" alt=""/><br /><sub><b>kirintw</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=kirintwn" title="valued-contributor(11 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/501746?v=4" width="100px;" alt=""/><br /><sub><b>Duarte Nunes</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=duarten" title="valued-contributor(11 merged PRs)">💻</a></td>
+<td align="center"><a href="https://civilizeddev.github.io/"><img src="https://avatars.githubusercontent.com/u/15084045?v=4" width="100px;" alt=""/><br /><sub><b>Hyeonsoo David Lee</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=civilizeddev" title="valued-contributor(10 merged PRs)">💻</a></td>
+<td align="center"><a href=""><img src="https://avatars.githubusercontent.com/u/5001?v=4" width="100px;" alt=""/><br /><sub><b>Ahmed Kamel</b></sub></a><br /><a href="https://github.com/aws/aws-cdk/commits?author=humanzz" title="valued-contributor(10 merged PRs)">💻</a></td>
+</tr>
+</table>
+
 ## Metrics collection
 This solution collects anonymous operational metrics to help AWS improve the
 quality and features of the CDK. For more information, including how to disable
