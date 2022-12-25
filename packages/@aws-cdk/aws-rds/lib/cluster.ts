@@ -12,12 +12,42 @@ import { DatabaseClusterAttributes, IDatabaseCluster } from './cluster-ref';
 import { DatabaseSecret } from './database-secret';
 import { Endpoint } from './endpoint';
 import { NetworkType } from './instance';
+import { IInstanceEngine } from './instance-engine';
 import { IParameterGroup, ParameterGroup } from './parameter-group';
 import { applyDefaultRotationOptions, defaultDeletionProtection, renderCredentials, setupS3ImportExport, helperRemovalPolicy, renderUnless } from './private/util';
 import { BackupProps, Credentials, InstanceProps, PerformanceInsightRetention, RotationSingleUserOptions, RotationMultiUserOptions, SnapshotCredentials } from './props';
 import { DatabaseProxy, DatabaseProxyOptions, ProxyTarget } from './proxy';
 import { CfnDBCluster, CfnDBClusterProps, CfnDBInstance } from './rds.generated';
 import { ISubnetGroup, SubnetGroup } from './subnet-group';
+
+/**
+ * Options for configuring scaling on an Aurora Serverless V2 cluster
+ *
+ */
+export interface ServerlessV2ScalingOptions {
+  /**
+   * The maximum number of Aurora capacity units (ACUs) for a DB instance in an Aurora Serverless v2 cluster.
+   * You can specify ACU values in half-step increments, such as 40, 40.5, 41, and so on. The largest value that you can use is 128.
+   * The maximum capacity must be higher than 0.5 ACUs.
+   *
+   * @default - minCapacity + 0.5
+   *
+   * @see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbcluster-serverlessv2scalingconfiguration.html#cfn-rds-dbcluster-serverlessv2scalingconfiguration-maxcapacity
+   * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max_capacity_considerations
+   */
+  readonly maxCapacity?: number;
+
+  /**
+   * The minimum number of Aurora capacity units (ACUs) for a DB instance in an Aurora Serverless v2 cluster.
+   * You can specify ACU values in half-step increments, such as 8, 8.5, 9, and so on. The smallest value that you can use is 0.5.
+   *
+   * @default 0.5
+   *
+   * @see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbcluster-serverlessv2scalingconfiguration.html#cfn-rds-dbcluster-serverlessv2scalingconfiguration-mincapacity
+   * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max_capacity_considerations
+   */
+  readonly minCapacity?: number;
+}
 
 /**
  * Common properties for a new database cluster or cluster from snapshot.
@@ -244,6 +274,13 @@ interface DatabaseClusterBaseProps {
    * @default - None
    */
   readonly s3ExportBuckets?: s3.IBucket[];
+
+  /**
+   * Serverless v2 scaling configurations. Required for cluster with serverless v2 instances.
+   *
+   * @default - None
+   */
+  readonly serverlessV2Scaling?: ServerlessV2ScalingOptions;
 
   /**
    * Existing subnet group for the cluster.
@@ -489,6 +526,8 @@ abstract class DatabaseClusterNew extends DatabaseClusterBase {
       associatedRoles: clusterAssociatedRoles.length > 0 ? clusterAssociatedRoles : undefined,
       deletionProtection: defaultDeletionProtection(props.deletionProtection, props.removalPolicy),
       enableIamDatabaseAuthentication: props.iamAuthentication,
+      serverlessV2ScalingConfiguration: props.serverlessV2Scaling ?
+        this.renderV2ScalingConfiguration(props.serverlessV2Scaling) : undefined,
       networkType: props.networkType,
       // Admin
       backtrackWindow: props.backtrackWindow?.toSeconds(),
@@ -502,6 +541,33 @@ abstract class DatabaseClusterNew extends DatabaseClusterBase {
       storageEncrypted: props.storageEncryptionKey ? true : props.storageEncrypted,
       // Tags
       copyTagsToSnapshot: props.copyTagsToSnapshot ?? true,
+    };
+  }
+  private renderV2ScalingConfiguration(options: ServerlessV2ScalingOptions): CfnDBCluster.ServerlessV2ScalingConfigurationProperty {
+    const minCapacity = options.minCapacity ?? 0.5;
+    const maxCapacity = options.maxCapacity ?? minCapacity + 0.5;
+
+    // maxCapacity should be higher than 0.5 and we can't specify 0.5 for both minCapacity and maxCapacity so maxCapacity should be at least 1
+    // @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max_capacity_considerations
+    if (minCapacity && minCapacity < 0.5 || maxCapacity && maxCapacity < 1) {
+      throw new Error('The smallest value that you can use for minCapacity and maxCapacity is 0.5 and 1.');
+    }
+
+    if (maxCapacity && maxCapacity > 128) {
+      throw new Error('The largest value that you can use for maxCapacity is 128.');
+    }
+
+    if (minCapacity && maxCapacity && minCapacity > maxCapacity) {
+      throw new Error('Maximum capacity must be greater than or equal to minimum capacity.');
+    }
+
+    if (minCapacity && minCapacity % 0.5 !== 0 || maxCapacity && maxCapacity % 0.5 !== 0) {
+      throw Error('You can only specify ACU values in half-step increments, such as 40, 40.5, 41, and so on.');
+    }
+
+    return {
+      minCapacity,
+      maxCapacity,
     };
   }
 
@@ -611,6 +677,32 @@ class ImportedDatabaseCluster extends DatabaseClusterBase implements IDatabaseCl
   }
 }
 
+// /**
+//  * Options to create a serverless v2 instance for Aurora Serverless v2.
+//  *
+//  */
+// export interface ServerlessInstanceOptions {
+//   /**
+//    * The instance engine of the instance.
+//    * @default - auto generated to match the cluster engine
+//    */
+//   readonly engine?: IInstanceEngine;
+// }
+
+/**
+ * Options to create a provisioned instance for Aurora Serverless v2.
+ */
+export interface ProvisionedInstanceOptions {
+  /**
+   * The instance engine of the instance.
+   */
+  readonly engine: IInstanceEngine;
+  /**
+   * The instance type of the instance.
+   */
+  readonly instanceType: ec2.InstanceType;
+}
+
 /**
  * Properties for a new database cluster
  */
@@ -642,6 +734,8 @@ export class DatabaseCluster extends DatabaseClusterNew {
   public readonly connections: ec2.Connections;
   public readonly instanceIdentifiers: string[];
   public readonly instanceEndpoints: Endpoint[];
+  private readonly props: DatabaseClusterProps;
+
 
   /**
    * The secret attached to this cluster
@@ -653,6 +747,7 @@ export class DatabaseCluster extends DatabaseClusterNew {
 
     const credentials = renderCredentials(this, props.engine, props.credentials);
     const secret = credentials.secret;
+    this.props = props;
 
     const cluster = new CfnDBCluster(this, 'Resource', {
       ...this.newCfnProps,
@@ -682,6 +777,147 @@ export class DatabaseCluster extends DatabaseClusterNew {
     const createdInstances = createInstances(this, props, this.subnetGroup);
     this.instanceIdentifiers = createdInstances.instanceIdentifiers;
     this.instanceEndpoints = createdInstances.instanceEndpoints;
+  }
+  // private determineInstanceEngine() {
+  //   if (this.props.engine.engineType === 'aurora-mysql') {
+  //     /**
+  //      * Only 8.0 major versions are supported. List supported versions with:
+  //      * aws rds describe-orderable-db-instance-options --engine aurora-mysql --db-instance-class \
+  //      * db.serverless --region my_region --query 'OrderableDBInstanceOptions[].[EngineVersion]' --output text
+  //      *
+  //      * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.requirements.html
+  //      */
+  //     if (this.props.engine.engineVersion?.majorVersion !== '8.0') {
+  //       throw new Error(`Aurora serverless v2 instance only supports aurora-mysql major version 8.0(${this.props.engine.engineVersion?.majorVersion} found)`);
+  //     }
+  //     return DatabaseInstanceEngine.auroraMysql({
+  //       version: AuroraMysqlEngineVersion.of(this.props.engine.engineVersion?.fullVersion!, this.props.engine.engineVersion?.majorVersion),
+  //     });
+  //   } else if (this.props.engine.engineType === 'aurora-postgresql') {
+  //     /**
+  //      * Only some major versions are supported. List supported versions with:
+  //      * aws rds describe-orderable-db-instance-options --engine aurora-postgresql --db-instance-class \
+  //      * db.serverless --region my_region --query 'OrderableDBInstanceOptions[].[EngineVersion]' --output text
+  //      *
+  //      * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.requirements.html
+  //      */
+  //     const supportedPostgreVersions = ['13.6', '13.7', '13.8', '14.3', '14.4', '14.5'];
+  //     if (supportedPostgreVersions.includes(this.props.engine.engineVersion?.majorVersion!)) {
+  //       throw new Error(`Aurora serverless v2 instance only supports aurora-postgresql major version ${supportedPostgreVersions.join(',')}(${this.props.engine.engineVersion?.majorVersion} found)`);
+  //     }
+  //     return DatabaseInstanceEngine.auroraPostgres({
+  //       version: AuroraPostgresEngineVersion.of(this.props.engine.engineVersion?.fullVersion!, this.props.engine.engineVersion?.majorVersion!),
+  //     });
+  //   } else {
+  //     throw new Error('Aurora serverless v2 only supports aurora-mysql or aurora-postgresql cluster engine type');
+  //   }
+  // }
+  private addInstance(id: string, serverless?: boolean): CfnDBInstance {
+    const instanceIdentifier = this.props.instanceIdentifierBase != null ? `${this.props.instanceIdentifierBase}${id}` :
+      this.props.clusterIdentifier != null ? `${this.props.clusterIdentifier}${id}` :
+        undefined;
+    const instanceProps = this.props.instanceProps;
+    const enablePerformanceInsights = instanceProps.enablePerformanceInsights;
+    const instanceParameterGroup = instanceProps.parameterGroup ?? (
+      instanceProps.parameters
+        ? new ParameterGroup(this, 'InstanceParameterGroup', {
+          engine: this.props.engine,
+          parameters: instanceProps.parameters,
+        })
+        : undefined
+    );
+    const instanceParameterGroupConfig = instanceParameterGroup?.bindToInstance({});
+    // the default instance type of DatabaseInstance construct is m5.large, which is not compatible with aurora serverless v2 engine versions.
+    // We use R5.large if serverlessV2Scaling is enabled.
+    const instanceType = this.props.instanceProps.instanceType ?? this.props.serverlessV2Scaling ?
+      ec2.InstanceType.of(ec2.InstanceClass.R5, ec2.InstanceSize.LARGE) : ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.LARGE);
+    const instance = new CfnDBInstance(this, id, {
+      // Link to cluster
+      engine: this.props.engine.engineType,
+      dbClusterIdentifier: this.clusterIdentifier,
+      dbInstanceIdentifier: instanceIdentifier,
+      // Instance properties
+      dbInstanceClass: serverless ? 'db.serverless' : `db.${instanceType}`,
+      publiclyAccessible: instanceProps.publiclyAccessible ??
+          (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
+      enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
+      performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
+      performanceInsightsRetentionPeriod: enablePerformanceInsights
+        ? (this.props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
+        : undefined,
+      // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
+      dbSubnetGroupName: this.subnetGroup.subnetGroupName,
+      dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
+      monitoringInterval: this.props.monitoringInterval && this.props.monitoringInterval.toSeconds(),
+      // monitoringRoleArn: monitoringRole && monitoringRole.roleArn,
+      autoMinorVersionUpgrade: this.props.instanceProps.autoMinorVersionUpgrade,
+      allowMajorVersionUpgrade: this.props.instanceProps.allowMajorVersionUpgrade,
+      deleteAutomatedBackups: this.props.instanceProps.deleteAutomatedBackups,
+    });
+    instance.applyRemovalPolicy(helperRemovalPolicy(this.props.removalPolicy));
+    return instance;
+  }
+  /**
+   * Add a serverless instance into the cluster.
+   */
+  public addServerlessInstance(id: string): CfnDBInstance {
+    // Serverless v2 scaling configuration on the parent DB cluster is required before we are allowed
+    // to create a serverless instance
+    if (this.props.serverlessV2Scaling === undefined) {
+      throw new Error('serverlessV2Scaling is required on the DB cluster');
+    }
+    return this.addInstance(id, true);
+    // const instanceIdentifier = this.props.instanceIdentifierBase != null ? `${this.props.instanceIdentifierBase}${id}` :
+    //   this.props.clusterIdentifier != null ? `${this.props.clusterIdentifier}${id}` :
+    //     undefined;
+    // const instanceProps = this.props.instanceProps;
+    // const enablePerformanceInsights = instanceProps.enablePerformanceInsights;
+    // const instanceParameterGroup = instanceProps.parameterGroup ?? (
+    //   instanceProps.parameters
+    //     ? new ParameterGroup(this, 'InstanceParameterGroup', {
+    //       engine: this.props.engine,
+    //       parameters: instanceProps.parameters,
+    //     })
+    //     : undefined
+    // );
+    // const instanceParameterGroupConfig = instanceParameterGroup?.bindToInstance({});
+    // const instance = new CfnDBInstance(this, id, {
+    //   // Link to cluster
+    //   engine: this.props.engine.engineType,
+    //   dbClusterIdentifier: this.clusterIdentifier,
+    //   dbInstanceIdentifier: instanceIdentifier,
+    //   // Instance properties
+    //   dbInstanceClass: 'db.serverless',
+    //   publiclyAccessible: instanceProps.publiclyAccessible ??
+    //       (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
+    //   enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
+    //   performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
+    //   performanceInsightsRetentionPeriod: enablePerformanceInsights
+    //     ? (this.props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
+    //     : undefined,
+    //   // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
+    //   dbSubnetGroupName: this.subnetGroup.subnetGroupName,
+    //   dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
+    //   monitoringInterval: this.props.monitoringInterval && this.props.monitoringInterval.toSeconds(),
+    //   // monitoringRoleArn: monitoringRole && monitoringRole.roleArn,
+    //   autoMinorVersionUpgrade: this.props.instanceProps.autoMinorVersionUpgrade,
+    //   allowMajorVersionUpgrade: this.props.instanceProps.allowMajorVersionUpgrade,
+    //   deleteAutomatedBackups: this.props.instanceProps.deleteAutomatedBackups,
+    // });
+    // instance.applyRemovalPolicy(helperRemovalPolicy(this.props.removalPolicy));
+  }
+  /**
+   * Add a provisioned instance into the cluster.
+   */
+  public addProvisionedInstance(id: string): CfnDBInstance {
+    return this.addInstance(id, false);
+    // return new DatabaseInstance(this, id, {
+    //   vpc: this.props.instanceProps.vpc,
+    //   serverlessV2InstanceType: ServerlessV2InstanceType.PROVISIONED,
+    //   instanceType: options.instanceType,
+    //   clusterIdentifier: this.clusterIdentifier,
+    //   engine: options.engine,
+    // });
   }
 }
 
@@ -844,9 +1080,6 @@ function createInstances(cluster: DatabaseClusterNew, props: DatabaseClusterBase
   if (Token.isUnresolved(instanceCount)) {
     throw new Error('The number of instances an RDS Cluster consists of cannot be provided as a deploy-time only value!');
   }
-  if (instanceCount < 1) {
-    throw new Error('At least one instance is required');
-  }
 
   const instanceIdentifiers: string[] = [];
   const instanceEndpoints: Endpoint[] = [];
@@ -934,6 +1167,37 @@ function createInstances(cluster: DatabaseClusterNew, props: DatabaseClusterBase
     instanceEndpoints.push(new Endpoint(instance.attrEndpointAddress, portAttribute));
     instances.push(instance);
   }
+
+  // // create serverless instances
+  // for (let i = 0; i < Lazy.number({ produce: () => cluster.serverlessInstances.length }); i++) {
+  //   // const instanceOption = cluster.serverlessInstances[i];
+  //   const instanceIdentifier = props.instanceIdentifierBase != null ? `${props.instanceIdentifierBase}Serverless${i}` :
+  //     props.clusterIdentifier != null ? `${props.clusterIdentifier}ServerlessInstance${i}` :
+  //       undefined;
+  //   new CfnDBInstance(cluster, `ServerlessInstance${i}`, {
+  //     // Link to cluster
+  //     engine: props.engine.engineType,
+  //     dbClusterIdentifier: cluster.clusterIdentifier,
+  //     dbInstanceIdentifier: instanceIdentifier,
+  //     // Instance properties
+  //     dbInstanceClass: 'db.serverless',
+  //     publiclyAccessible: instanceProps.publiclyAccessible ??
+  //         (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
+  //     enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
+  //     performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
+  //     performanceInsightsRetentionPeriod: enablePerformanceInsights
+  //       ? (props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
+  //       : undefined,
+  //     // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
+  //     dbSubnetGroupName: subnetGroup.subnetGroupName,
+  //     dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
+  //     monitoringInterval: props.monitoringInterval && props.monitoringInterval.toSeconds(),
+  //     monitoringRoleArn: monitoringRole && monitoringRole.roleArn,
+  //     autoMinorVersionUpgrade: props.instanceProps.autoMinorVersionUpgrade,
+  //     allowMajorVersionUpgrade: props.instanceProps.allowMajorVersionUpgrade,
+  //     deleteAutomatedBackups: props.instanceProps.deleteAutomatedBackups,
+  //   });
+  // }
 
   // Adding dependencies here to ensure that the instances are updated one after the other.
   if (instanceUpdateBehaviour === InstanceUpdateBehaviour.ROLLING) {

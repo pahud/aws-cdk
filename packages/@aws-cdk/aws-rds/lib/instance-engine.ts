@@ -1,6 +1,7 @@
 import * as iam from '@aws-cdk/aws-iam';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import { Construct } from 'constructs';
+import { AuroraMysqlEngineVersion, AuroraPostgresEngineVersion } from './cluster-engine';
 import { IEngine } from './engine';
 import { EngineVersion } from './engine-version';
 import { IOptionGroup, OptionGroup } from './option-group';
@@ -654,6 +655,38 @@ class MySqlInstanceEngine extends InstanceEngineBase {
 }
 
 /**
+ * Properties for Aurora MySQL instance engines.
+ * Used in {@link DatabaseInstanceEngine.auroraMySql}.
+ */
+export interface AuroraMysqlInstanceEngineProps {
+  /** The exact version of the engine to use. */
+  readonly version: AuroraMysqlEngineVersion;
+
+}
+
+/**
+ * The instance engine for Aurora MySQL for Aurora Serverless v2.
+ */
+class AuroraMySqlInstanceEngine extends InstanceEngineBase {
+  public readonly supportsReadReplicaBackups = true;
+
+  constructor(version?: AuroraMysqlEngineVersion) {
+    super({
+      engineType: 'aurora-mysql',
+      singleUserRotationApplication: secretsmanager.SecretRotationApplication.MYSQL_ROTATION_SINGLE_USER,
+      multiUserRotationApplication: secretsmanager.SecretRotationApplication.MYSQL_ROTATION_MULTI_USER,
+      version: version
+        ? {
+          fullVersion: version.auroraMysqlFullVersion,
+          majorVersion: version.auroraMysqlMajorVersion,
+        }
+        : undefined,
+      engineFamily: 'MYSQL',
+    });
+  }
+}
+
+/**
  * Features supported by the Postgres database engine
  */
 export interface PostgresEngineFeatures {
@@ -1088,6 +1121,37 @@ class PostgresInstanceEngine extends InstanceEngineBase {
     });
   }
 }
+
+/**
+ * Properties for Aurora PostgreSQL instance engines.
+ * Used in {@link DatabaseInstanceEngine.auroraPostgres}.
+ */
+export interface AuroraPostgresInstanceEngineProps {
+  /** The exact version of the engine to use. */
+  readonly version: AuroraPostgresEngineVersion;
+}
+/**
+ * The instance engine for Aurora PostgreSQL for Aurora Serverless v2.
+ */
+class AuroraPostgresInstanceEngine extends InstanceEngineBase {
+  public readonly supportsReadReplicaBackups = true;
+
+  constructor(version?: AuroraPostgresEngineVersion) {
+    super({
+      engineType: 'aurora-postgresql',
+      singleUserRotationApplication: secretsmanager.SecretRotationApplication.POSTGRES_ROTATION_SINGLE_USER,
+      multiUserRotationApplication: secretsmanager.SecretRotationApplication.POSTGRES_ROTATION_MULTI_USER,
+      version: version
+        ? {
+          fullVersion: version.auroraPostgresFullVersion,
+          majorVersion: version.auroraPostgresMajorVersion,
+        }
+        : undefined,
+      engineFamily: 'POSTGRESQL',
+    });
+  }
+}
+
 
 /**
  * The versions for the legacy Oracle instance engines
@@ -1840,6 +1904,14 @@ export class DatabaseInstanceEngine {
   public static readonly MYSQL: IInstanceEngine = new MySqlInstanceEngine();
 
   /**
+   * The unversioned 'aurora-mysql' instance engine.
+   *
+   * NOTE: using unversioned engines is an availability risk.
+   *   We recommend using versioned engines created using the {@link auroraMysql()} method
+   */
+  public static readonly AURORA_MYSQL: IInstanceEngine = new AuroraMySqlInstanceEngine();
+
+  /**
    * The unversioned 'oracle-ee' instance engine.
    *
    * NOTE: using unversioned engines is an availability risk.
@@ -1938,6 +2010,16 @@ export class DatabaseInstanceEngine {
   /** Creates a new PostgreSQL instance engine. */
   public static postgres(props: PostgresInstanceEngineProps): IInstanceEngine {
     return new PostgresInstanceEngine(props.version);
+  }
+
+  /** Creates a new Aurora MySQL instance engine. */
+  public static auroraMysql(props: AuroraMysqlInstanceEngineProps): IInstanceEngine {
+    return new AuroraMySqlInstanceEngine(props.version);
+  }
+
+  /** Creates a new Aurora Postgres instance engine. */
+  public static auroraPostgres(props: AuroraPostgresInstanceEngineProps): IInstanceEngine {
+    return new AuroraPostgresInstanceEngine(props.version);
   }
 
   /**

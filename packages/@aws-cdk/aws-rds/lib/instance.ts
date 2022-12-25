@@ -381,6 +381,13 @@ export interface DatabaseInstanceNewProps {
   readonly instanceIdentifier?: string;
 
   /**
+   * The identifier of the DB cluster that the instance will belong to.
+   *
+   * @default - not belong to any cluster
+   */
+  readonly clusterIdentifier?: string;
+
+  /**
    * The VPC network where the DB subnet group should be created.
    */
   readonly vpc: ec2.IVpc;
@@ -670,6 +677,13 @@ export interface DatabaseInstanceNewProps {
    * @default - `true` if `vpcSubnets` is `subnetType: SubnetType.PUBLIC`, `false` otherwise
    */
   readonly publiclyAccessible?: boolean;
+
+  /**
+   * Indicates whether the DB isntance is an Aurora Serverless v2 instance.
+   *
+   * @default ServerlessV2InstanceType.PROVISIONED
+   */
+  readonly serverlessV2InstanceType?: ServerlessV2InstanceType;
 
   /**
    * The network type of the DB instance.
@@ -1029,6 +1043,20 @@ abstract class DatabaseInstanceSource extends DatabaseInstanceNew implements IDa
       target: this,
     });
   }
+}
+
+/**
+ * Indicates whether serverless or provisioned instance.
+ */
+export enum ServerlessV2InstanceType {
+  /**
+   * Serverless v2 instance.
+   */
+  SERVERLESS,
+  /**
+   * Provisioned instance.
+   */
+  PROVISIONED,
 }
 
 /**
