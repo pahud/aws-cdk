@@ -747,18 +747,6 @@ class ImportedDatabaseCluster extends DatabaseClusterBase implements IDatabaseCl
   }
 }
 
-// /**
-//  * Options to create a serverless v2 instance for Aurora Serverless v2.
-//  *
-//  */
-// export interface ServerlessInstanceOptions {
-//   /**
-//    * The instance engine of the instance.
-//    * @default - auto generated to match the cluster engine
-//    */
-//   readonly engine?: IInstanceEngine;
-// }
-
 /**
  * Options to create a provisioned instance for Aurora Serverless v2.
  */
@@ -858,101 +846,6 @@ export class DatabaseCluster extends DatabaseClusterNew {
     this.instanceIdentifiers = createdInstances.instanceIdentifiers;
     this.instanceEndpoints = createdInstances.instanceEndpoints;
   }
-  // private determineInstanceEngine() {
-  //   if (this.props.engine.engineType === 'aurora-mysql') {
-  //     /**
-  //      * Only 8.0 major versions are supported. List supported versions with:
-  //      * aws rds describe-orderable-db-instance-options --engine aurora-mysql --db-instance-class \
-  //      * db.serverless --region my_region --query 'OrderableDBInstanceOptions[].[EngineVersion]' --output text
-  //      *
-  //      * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.requirements.html
-  //      */
-  //     if (this.props.engine.engineVersion?.majorVersion !== '8.0') {
-  //       throw new Error(`Aurora serverless v2 instance only supports aurora-mysql major version 8.0(${this.props.engine.engineVersion?.majorVersion} found)`);
-  //     }
-  //     return DatabaseInstanceEngine.auroraMysql({
-  //       version: AuroraMysqlEngineVersion.of(this.props.engine.engineVersion?.fullVersion!, this.props.engine.engineVersion?.majorVersion),
-  //     });
-  //   } else if (this.props.engine.engineType === 'aurora-postgresql') {
-  //     /**
-  //      * Only some major versions are supported. List supported versions with:
-  //      * aws rds describe-orderable-db-instance-options --engine aurora-postgresql --db-instance-class \
-  //      * db.serverless --region my_region --query 'OrderableDBInstanceOptions[].[EngineVersion]' --output text
-  //      *
-  //      * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.requirements.html
-  //      */
-  //     const supportedPostgreVersions = ['13.6', '13.7', '13.8', '14.3', '14.4', '14.5'];
-  //     if (supportedPostgreVersions.includes(this.props.engine.engineVersion?.majorVersion!)) {
-  //       throw new Error(`Aurora serverless v2 instance only supports aurora-postgresql major version ${supportedPostgreVersions.join(',')}(${this.props.engine.engineVersion?.majorVersion} found)`);
-  //     }
-  //     return DatabaseInstanceEngine.auroraPostgres({
-  //       version: AuroraPostgresEngineVersion.of(this.props.engine.engineVersion?.fullVersion!, this.props.engine.engineVersion?.majorVersion!),
-  //     });
-  //   } else {
-  //     throw new Error('Aurora serverless v2 only supports aurora-mysql or aurora-postgresql cluster engine type');
-  //   }
-  // }
-  // private addInstance(id: string, serverless?: boolean): CfnDBInstance {
-  //   const instanceIdentifier = this.props.instanceIdentifierBase != null ? `${this.props.instanceIdentifierBase}${id}` :
-  //     this.props.clusterIdentifier != null ? `${this.props.clusterIdentifier}${id}` :
-  //       undefined;
-  //   const instanceProps = this.props.instanceProps;
-  //   const enablePerformanceInsights = instanceProps.enablePerformanceInsights;
-  //   const instanceParameterGroup = instanceProps.parameterGroup ?? (
-  //     instanceProps.parameters
-  //       ? new ParameterGroup(this, 'InstanceParameterGroup', {
-  //         engine: this.props.engine,
-  //         parameters: instanceProps.parameters,
-  //       })
-  //       : undefined
-  //   );
-  //   const instanceParameterGroupConfig = instanceParameterGroup?.bindToInstance({});
-  //   // the default instance type of DatabaseInstance construct is m5.large, which is not compatible with aurora serverless v2 engine versions.
-  //   // We use R5.large if serverlessV2Scaling is enabled.
-  //   const instanceType = this.props.instanceProps.instanceType ?? ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MEDIUM);
-  //   const instance = new CfnDBInstance(this, id, {
-  //     // Link to cluster
-  //     engine: this.props.engine.engineType,
-  //     dbClusterIdentifier: this.clusterIdentifier,
-  //     dbInstanceIdentifier: instanceIdentifier,
-  //     // Instance properties
-  //     dbInstanceClass: serverless ? 'db.serverless' : `db.${instanceType}`,
-  //     publiclyAccessible: instanceProps.publiclyAccessible ??
-  //         (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
-  //     enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
-  //     performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
-  //     performanceInsightsRetentionPeriod: enablePerformanceInsights
-  //       ? (this.props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
-  //       : undefined,
-  //     // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
-  //     dbSubnetGroupName: this.subnetGroup.subnetGroupName,
-  //     dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
-  //     monitoringInterval: this.props.monitoringInterval && this.props.monitoringInterval.toSeconds(),
-  //     monitoringRoleArn: this.monitoringRole?.roleArn,
-  //     autoMinorVersionUpgrade: this.props.instanceProps.autoMinorVersionUpgrade,
-  //     allowMajorVersionUpgrade: this.props.instanceProps.allowMajorVersionUpgrade,
-  //     deleteAutomatedBackups: this.props.instanceProps.deleteAutomatedBackups,
-  //   });
-  //   instance.applyRemovalPolicy(helperRemovalPolicy(this.props.removalPolicy));
-  //   return instance;
-  // }
-  // /**
-  //  * Add a serverless instance into the cluster.
-  //  */
-  // public addServerlessInstance(id: string): CfnDBInstance {
-  //   // Serverless v2 scaling configuration on the parent DB cluster is required before we are allowed
-  //   // to create a serverless instance
-  //   if (this.props.serverlessV2Scaling === undefined) {
-  //     throw new Error('serverlessV2Scaling is required on the DB cluster');
-  //   }
-  //   return this.addInstance(id, true);
-  // }
-  // /**
-  //  * Add a provisioned instance into the cluster.
-  //  */
-  // public addProvisionedInstance(id: string): CfnDBInstance {
-  //   return this.addInstance(id, false);
-  // }
 }
 
 /**
@@ -1132,16 +1025,6 @@ function createInstances(cluster: DatabaseClusterNew, props: DatabaseClusterBase
   // Get the actual subnet objects so we can depend on internet connectivity.
   const internetConnected = instanceProps.vpc.selectSubnets(instanceProps.vpcSubnets).internetConnectivityEstablished;
 
-  // let monitoringRole;
-  // if (props.monitoringInterval && props.monitoringInterval.toSeconds()) {
-  //   monitoringRole = props.monitoringRole || new Role(cluster, 'MonitoringRole', {
-  //     assumedBy: new ServicePrincipal('monitoring.rds.amazonaws.com'),
-  //     managedPolicies: [
-  //       ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonRDSEnhancedMonitoringRole'),
-  //     ],
-  //   });
-  // }
-
   const enablePerformanceInsights = instanceProps.enablePerformanceInsights
     || instanceProps.performanceInsightRetention !== undefined || instanceProps.performanceInsightEncryptionKey !== undefined;
   if (enablePerformanceInsights && instanceProps.enablePerformanceInsights === false) {
@@ -1210,37 +1093,6 @@ function createInstances(cluster: DatabaseClusterNew, props: DatabaseClusterBase
     instanceEndpoints.push(new Endpoint(instance.attrEndpointAddress, portAttribute));
     instances.push(instance);
   }
-
-  // // create serverless instances
-  // for (let i = 0; i < Lazy.number({ produce: () => cluster.serverlessInstances.length }); i++) {
-  //   // const instanceOption = cluster.serverlessInstances[i];
-  //   const instanceIdentifier = props.instanceIdentifierBase != null ? `${props.instanceIdentifierBase}Serverless${i}` :
-  //     props.clusterIdentifier != null ? `${props.clusterIdentifier}ServerlessInstance${i}` :
-  //       undefined;
-  //   new CfnDBInstance(cluster, `ServerlessInstance${i}`, {
-  //     // Link to cluster
-  //     engine: props.engine.engineType,
-  //     dbClusterIdentifier: cluster.clusterIdentifier,
-  //     dbInstanceIdentifier: instanceIdentifier,
-  //     // Instance properties
-  //     dbInstanceClass: 'db.serverless',
-  //     publiclyAccessible: instanceProps.publiclyAccessible ??
-  //         (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
-  //     enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
-  //     performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
-  //     performanceInsightsRetentionPeriod: enablePerformanceInsights
-  //       ? (props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
-  //       : undefined,
-  //     // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
-  //     dbSubnetGroupName: subnetGroup.subnetGroupName,
-  //     dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
-  //     monitoringInterval: props.monitoringInterval && props.monitoringInterval.toSeconds(),
-  //     monitoringRoleArn: monitoringRole && monitoringRole.roleArn,
-  //     autoMinorVersionUpgrade: props.instanceProps.autoMinorVersionUpgrade,
-  //     allowMajorVersionUpgrade: props.instanceProps.allowMajorVersionUpgrade,
-  //     deleteAutomatedBackups: props.instanceProps.deleteAutomatedBackups,
-  //   });
-  // }
 
   // Adding dependencies here to ensure that the instances are updated one after the other.
   if (instanceUpdateBehaviour === InstanceUpdateBehaviour.ROLLING) {
