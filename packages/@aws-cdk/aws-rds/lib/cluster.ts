@@ -417,6 +417,7 @@ abstract class DatabaseClusterNew extends DatabaseClusterBase {
   protected readonly newCfnProps: CfnDBClusterProps;
   protected readonly securityGroups: ec2.ISecurityGroup[];
   protected readonly subnetGroup: ISubnetGroup;
+  public abstract readonly monitoringRole?: IRole;
 
   /**
    * Secret in SecretsManager to store the database cluster user credentials.
@@ -442,6 +443,7 @@ abstract class DatabaseClusterNew extends DatabaseClusterBase {
    * Application for multi user rotation to this cluster.
    */
   public readonly multiUserRotationApplication: secretsmanager.SecretRotationApplication;
+  private readonly props: DatabaseClusterBaseProps
 
   constructor(scope: Construct, id: string, props: DatabaseClusterBaseProps) {
     super(scope, id);
@@ -451,6 +453,7 @@ abstract class DatabaseClusterNew extends DatabaseClusterBase {
 
     this.singleUserRotationApplication = props.engine.singleUserRotationApplication;
     this.multiUserRotationApplication = props.engine.multiUserRotationApplication;
+    this.props = props;
 
     const { subnetIds } = props.instanceProps.vpc.selectSubnets(props.instanceProps.vpcSubnets);
 
@@ -569,6 +572,73 @@ abstract class DatabaseClusterNew extends DatabaseClusterBase {
       minCapacity,
       maxCapacity,
     };
+  }
+  private addInstance(id: string, serverless?: boolean): CfnDBInstance {
+    const instanceIdentifier = this.props.instanceIdentifierBase != null ? `${this.props.instanceIdentifierBase}${id}` :
+      this.props.clusterIdentifier != null ? `${this.props.clusterIdentifier}${id}` :
+        undefined;
+    const instanceProps = this.props.instanceProps;
+    const enablePerformanceInsights = instanceProps.enablePerformanceInsights;
+    const instanceParameterGroup = instanceProps.parameterGroup ?? (
+      instanceProps.parameters
+        ? new ParameterGroup(this, 'InstanceParameterGroup', {
+          engine: this.props.engine,
+          parameters: instanceProps.parameters,
+        })
+        : undefined
+    );
+    const instanceParameterGroupConfig = instanceParameterGroup?.bindToInstance({});
+    // the default instance type of DatabaseInstance construct is m5.large, which is not compatible with aurora serverless v2 engine versions.
+    // We use R5.large if serverlessV2Scaling is enabled.
+    const instanceType = this.props.instanceProps.instanceType ?? ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MEDIUM);
+    const instance = new CfnDBInstance(this, id, {
+      // Link to cluster
+      engine: this.props.engine.engineType,
+      dbClusterIdentifier: this.clusterIdentifier,
+      dbInstanceIdentifier: instanceIdentifier,
+      // Instance properties
+      dbInstanceClass: serverless ? 'db.serverless' : `db.${instanceType}`,
+      publiclyAccessible: instanceProps.publiclyAccessible ??
+          (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
+      enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
+      performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
+      performanceInsightsRetentionPeriod: enablePerformanceInsights
+        ? (this.props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
+        : undefined,
+      // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
+      dbSubnetGroupName: this.subnetGroup.subnetGroupName,
+      dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
+      monitoringInterval: this.props.monitoringInterval && this.props.monitoringInterval.toSeconds(),
+      monitoringRoleArn: this.monitoringRole?.roleArn,
+      autoMinorVersionUpgrade: this.props.instanceProps.autoMinorVersionUpgrade,
+      allowMajorVersionUpgrade: this.props.instanceProps.allowMajorVersionUpgrade,
+      deleteAutomatedBackups: this.props.instanceProps.deleteAutomatedBackups,
+    });
+    instance.applyRemovalPolicy(helperRemovalPolicy(this.props.removalPolicy));
+    // ensure the added instance always depends on the instances created with the cluster.
+    this.node.children.forEach(e => {
+      if (e instanceof CfnDBInstance) {
+        instance.node.addDependency(e);
+      }
+    });
+    return instance;
+  }
+  /**
+   * Add a serverless instance into the cluster.
+   */
+  public addServerlessInstance(id: string): CfnDBInstance {
+    // Serverless v2 scaling configuration on the parent DB cluster is required before we are allowed
+    // to create a serverless instance
+    if (this.props.serverlessV2Scaling === undefined) {
+      throw new Error('serverlessV2Scaling is required on the DB cluster');
+    }
+    return this.addInstance(id, true);
+  }
+  /**
+   * Add a provisioned instance into the cluster.
+   */
+  public addProvisionedInstance(id: string): CfnDBInstance {
+    return this.addInstance(id, false);
   }
 
   /**
@@ -734,7 +804,8 @@ export class DatabaseCluster extends DatabaseClusterNew {
   public readonly connections: ec2.Connections;
   public readonly instanceIdentifiers: string[];
   public readonly instanceEndpoints: Endpoint[];
-  private readonly props: DatabaseClusterProps;
+  // private readonly props: DatabaseClusterProps;
+  public readonly monitoringRole?: IRole;
 
 
   /**
@@ -747,7 +818,6 @@ export class DatabaseCluster extends DatabaseClusterNew {
 
     const credentials = renderCredentials(this, props.engine, props.credentials);
     const secret = credentials.secret;
-    this.props = props;
 
     const cluster = new CfnDBCluster(this, 'Resource', {
       ...this.newCfnProps,
@@ -774,6 +844,16 @@ export class DatabaseCluster extends DatabaseClusterNew {
     cluster.applyRemovalPolicy(props.removalPolicy ?? RemovalPolicy.SNAPSHOT);
 
     setLogRetention(this, props);
+
+    if (props.monitoringInterval && props.monitoringInterval.toSeconds()) {
+      this.monitoringRole = props.monitoringRole || new Role(cluster, 'MonitoringRole', {
+        assumedBy: new ServicePrincipal('monitoring.rds.amazonaws.com'),
+        managedPolicies: [
+          ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonRDSEnhancedMonitoringRole'),
+        ],
+      });
+    }
+
     const createdInstances = createInstances(this, props, this.subnetGroup);
     this.instanceIdentifiers = createdInstances.instanceIdentifiers;
     this.instanceEndpoints = createdInstances.instanceEndpoints;
@@ -812,113 +892,67 @@ export class DatabaseCluster extends DatabaseClusterNew {
   //     throw new Error('Aurora serverless v2 only supports aurora-mysql or aurora-postgresql cluster engine type');
   //   }
   // }
-  private addInstance(id: string, serverless?: boolean): CfnDBInstance {
-    const instanceIdentifier = this.props.instanceIdentifierBase != null ? `${this.props.instanceIdentifierBase}${id}` :
-      this.props.clusterIdentifier != null ? `${this.props.clusterIdentifier}${id}` :
-        undefined;
-    const instanceProps = this.props.instanceProps;
-    const enablePerformanceInsights = instanceProps.enablePerformanceInsights;
-    const instanceParameterGroup = instanceProps.parameterGroup ?? (
-      instanceProps.parameters
-        ? new ParameterGroup(this, 'InstanceParameterGroup', {
-          engine: this.props.engine,
-          parameters: instanceProps.parameters,
-        })
-        : undefined
-    );
-    const instanceParameterGroupConfig = instanceParameterGroup?.bindToInstance({});
-    // the default instance type of DatabaseInstance construct is m5.large, which is not compatible with aurora serverless v2 engine versions.
-    // We use R5.large if serverlessV2Scaling is enabled.
-    const instanceType = this.props.instanceProps.instanceType ?? this.props.serverlessV2Scaling ?
-      ec2.InstanceType.of(ec2.InstanceClass.R5, ec2.InstanceSize.LARGE) : ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.LARGE);
-    const instance = new CfnDBInstance(this, id, {
-      // Link to cluster
-      engine: this.props.engine.engineType,
-      dbClusterIdentifier: this.clusterIdentifier,
-      dbInstanceIdentifier: instanceIdentifier,
-      // Instance properties
-      dbInstanceClass: serverless ? 'db.serverless' : `db.${instanceType}`,
-      publiclyAccessible: instanceProps.publiclyAccessible ??
-          (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
-      enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
-      performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
-      performanceInsightsRetentionPeriod: enablePerformanceInsights
-        ? (this.props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
-        : undefined,
-      // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
-      dbSubnetGroupName: this.subnetGroup.subnetGroupName,
-      dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
-      monitoringInterval: this.props.monitoringInterval && this.props.monitoringInterval.toSeconds(),
-      // monitoringRoleArn: monitoringRole && monitoringRole.roleArn,
-      autoMinorVersionUpgrade: this.props.instanceProps.autoMinorVersionUpgrade,
-      allowMajorVersionUpgrade: this.props.instanceProps.allowMajorVersionUpgrade,
-      deleteAutomatedBackups: this.props.instanceProps.deleteAutomatedBackups,
-    });
-    instance.applyRemovalPolicy(helperRemovalPolicy(this.props.removalPolicy));
-    return instance;
-  }
-  /**
-   * Add a serverless instance into the cluster.
-   */
-  public addServerlessInstance(id: string): CfnDBInstance {
-    // Serverless v2 scaling configuration on the parent DB cluster is required before we are allowed
-    // to create a serverless instance
-    if (this.props.serverlessV2Scaling === undefined) {
-      throw new Error('serverlessV2Scaling is required on the DB cluster');
-    }
-    return this.addInstance(id, true);
-    // const instanceIdentifier = this.props.instanceIdentifierBase != null ? `${this.props.instanceIdentifierBase}${id}` :
-    //   this.props.clusterIdentifier != null ? `${this.props.clusterIdentifier}${id}` :
-    //     undefined;
-    // const instanceProps = this.props.instanceProps;
-    // const enablePerformanceInsights = instanceProps.enablePerformanceInsights;
-    // const instanceParameterGroup = instanceProps.parameterGroup ?? (
-    //   instanceProps.parameters
-    //     ? new ParameterGroup(this, 'InstanceParameterGroup', {
-    //       engine: this.props.engine,
-    //       parameters: instanceProps.parameters,
-    //     })
-    //     : undefined
-    // );
-    // const instanceParameterGroupConfig = instanceParameterGroup?.bindToInstance({});
-    // const instance = new CfnDBInstance(this, id, {
-    //   // Link to cluster
-    //   engine: this.props.engine.engineType,
-    //   dbClusterIdentifier: this.clusterIdentifier,
-    //   dbInstanceIdentifier: instanceIdentifier,
-    //   // Instance properties
-    //   dbInstanceClass: 'db.serverless',
-    //   publiclyAccessible: instanceProps.publiclyAccessible ??
-    //       (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
-    //   enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
-    //   performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
-    //   performanceInsightsRetentionPeriod: enablePerformanceInsights
-    //     ? (this.props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
-    //     : undefined,
-    //   // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
-    //   dbSubnetGroupName: this.subnetGroup.subnetGroupName,
-    //   dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
-    //   monitoringInterval: this.props.monitoringInterval && this.props.monitoringInterval.toSeconds(),
-    //   // monitoringRoleArn: monitoringRole && monitoringRole.roleArn,
-    //   autoMinorVersionUpgrade: this.props.instanceProps.autoMinorVersionUpgrade,
-    //   allowMajorVersionUpgrade: this.props.instanceProps.allowMajorVersionUpgrade,
-    //   deleteAutomatedBackups: this.props.instanceProps.deleteAutomatedBackups,
-    // });
-    // instance.applyRemovalPolicy(helperRemovalPolicy(this.props.removalPolicy));
-  }
-  /**
-   * Add a provisioned instance into the cluster.
-   */
-  public addProvisionedInstance(id: string): CfnDBInstance {
-    return this.addInstance(id, false);
-    // return new DatabaseInstance(this, id, {
-    //   vpc: this.props.instanceProps.vpc,
-    //   serverlessV2InstanceType: ServerlessV2InstanceType.PROVISIONED,
-    //   instanceType: options.instanceType,
-    //   clusterIdentifier: this.clusterIdentifier,
-    //   engine: options.engine,
-    // });
-  }
+  // private addInstance(id: string, serverless?: boolean): CfnDBInstance {
+  //   const instanceIdentifier = this.props.instanceIdentifierBase != null ? `${this.props.instanceIdentifierBase}${id}` :
+  //     this.props.clusterIdentifier != null ? `${this.props.clusterIdentifier}${id}` :
+  //       undefined;
+  //   const instanceProps = this.props.instanceProps;
+  //   const enablePerformanceInsights = instanceProps.enablePerformanceInsights;
+  //   const instanceParameterGroup = instanceProps.parameterGroup ?? (
+  //     instanceProps.parameters
+  //       ? new ParameterGroup(this, 'InstanceParameterGroup', {
+  //         engine: this.props.engine,
+  //         parameters: instanceProps.parameters,
+  //       })
+  //       : undefined
+  //   );
+  //   const instanceParameterGroupConfig = instanceParameterGroup?.bindToInstance({});
+  //   // the default instance type of DatabaseInstance construct is m5.large, which is not compatible with aurora serverless v2 engine versions.
+  //   // We use R5.large if serverlessV2Scaling is enabled.
+  //   const instanceType = this.props.instanceProps.instanceType ?? ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MEDIUM);
+  //   const instance = new CfnDBInstance(this, id, {
+  //     // Link to cluster
+  //     engine: this.props.engine.engineType,
+  //     dbClusterIdentifier: this.clusterIdentifier,
+  //     dbInstanceIdentifier: instanceIdentifier,
+  //     // Instance properties
+  //     dbInstanceClass: serverless ? 'db.serverless' : `db.${instanceType}`,
+  //     publiclyAccessible: instanceProps.publiclyAccessible ??
+  //         (instanceProps.vpcSubnets && instanceProps.vpcSubnets.subnetType === ec2.SubnetType.PUBLIC),
+  //     enablePerformanceInsights: enablePerformanceInsights || instanceProps.enablePerformanceInsights, // fall back to undefined if not set
+  //     performanceInsightsKmsKeyId: instanceProps.performanceInsightEncryptionKey?.keyArn,
+  //     performanceInsightsRetentionPeriod: enablePerformanceInsights
+  //       ? (this.props.instanceProps.performanceInsightRetention || PerformanceInsightRetention.DEFAULT)
+  //       : undefined,
+  //     // This is already set on the Cluster. Unclear to me whether it should be repeated or not. Better yes.
+  //     dbSubnetGroupName: this.subnetGroup.subnetGroupName,
+  //     dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
+  //     monitoringInterval: this.props.monitoringInterval && this.props.monitoringInterval.toSeconds(),
+  //     monitoringRoleArn: this.monitoringRole?.roleArn,
+  //     autoMinorVersionUpgrade: this.props.instanceProps.autoMinorVersionUpgrade,
+  //     allowMajorVersionUpgrade: this.props.instanceProps.allowMajorVersionUpgrade,
+  //     deleteAutomatedBackups: this.props.instanceProps.deleteAutomatedBackups,
+  //   });
+  //   instance.applyRemovalPolicy(helperRemovalPolicy(this.props.removalPolicy));
+  //   return instance;
+  // }
+  // /**
+  //  * Add a serverless instance into the cluster.
+  //  */
+  // public addServerlessInstance(id: string): CfnDBInstance {
+  //   // Serverless v2 scaling configuration on the parent DB cluster is required before we are allowed
+  //   // to create a serverless instance
+  //   if (this.props.serverlessV2Scaling === undefined) {
+  //     throw new Error('serverlessV2Scaling is required on the DB cluster');
+  //   }
+  //   return this.addInstance(id, true);
+  // }
+  // /**
+  //  * Add a provisioned instance into the cluster.
+  //  */
+  // public addProvisionedInstance(id: string): CfnDBInstance {
+  //   return this.addInstance(id, false);
+  // }
 }
 
 /**
@@ -975,6 +1009,7 @@ export class DatabaseClusterFromSnapshot extends DatabaseClusterNew {
    * The secret attached to this cluster
    */
   public readonly secret?: secretsmanager.ISecret;
+  public readonly monitoringRole?: IRole;
 
   constructor(scope: Construct, id: string, props: DatabaseClusterFromSnapshotProps) {
     super(scope, id, props);
@@ -1034,6 +1069,14 @@ export class DatabaseClusterFromSnapshot extends DatabaseClusterNew {
     cluster.applyRemovalPolicy(props.removalPolicy ?? RemovalPolicy.SNAPSHOT);
 
     setLogRetention(this, props);
+    if (props.monitoringInterval && props.monitoringInterval.toSeconds()) {
+      this.monitoringRole = props.monitoringRole || new Role(cluster, 'MonitoringRole', {
+        assumedBy: new ServicePrincipal('monitoring.rds.amazonaws.com'),
+        managedPolicies: [
+          ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonRDSEnhancedMonitoringRole'),
+        ],
+      });
+    }
     const createdInstances = createInstances(this, props, this.subnetGroup);
     this.instanceIdentifiers = createdInstances.instanceIdentifiers;
     this.instanceEndpoints = createdInstances.instanceEndpoints;
@@ -1089,15 +1132,15 @@ function createInstances(cluster: DatabaseClusterNew, props: DatabaseClusterBase
   // Get the actual subnet objects so we can depend on internet connectivity.
   const internetConnected = instanceProps.vpc.selectSubnets(instanceProps.vpcSubnets).internetConnectivityEstablished;
 
-  let monitoringRole;
-  if (props.monitoringInterval && props.monitoringInterval.toSeconds()) {
-    monitoringRole = props.monitoringRole || new Role(cluster, 'MonitoringRole', {
-      assumedBy: new ServicePrincipal('monitoring.rds.amazonaws.com'),
-      managedPolicies: [
-        ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonRDSEnhancedMonitoringRole'),
-      ],
-    });
-  }
+  // let monitoringRole;
+  // if (props.monitoringInterval && props.monitoringInterval.toSeconds()) {
+  //   monitoringRole = props.monitoringRole || new Role(cluster, 'MonitoringRole', {
+  //     assumedBy: new ServicePrincipal('monitoring.rds.amazonaws.com'),
+  //     managedPolicies: [
+  //       ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonRDSEnhancedMonitoringRole'),
+  //     ],
+  //   });
+  // }
 
   const enablePerformanceInsights = instanceProps.enablePerformanceInsights
     || instanceProps.performanceInsightRetention !== undefined || instanceProps.performanceInsightEncryptionKey !== undefined;
@@ -1147,7 +1190,7 @@ function createInstances(cluster: DatabaseClusterNew, props: DatabaseClusterBase
       dbSubnetGroupName: subnetGroup.subnetGroupName,
       dbParameterGroupName: instanceParameterGroupConfig?.parameterGroupName,
       monitoringInterval: props.monitoringInterval && props.monitoringInterval.toSeconds(),
-      monitoringRoleArn: monitoringRole && monitoringRole.roleArn,
+      monitoringRoleArn: cluster.monitoringRole?.roleArn,
       autoMinorVersionUpgrade: props.instanceProps.autoMinorVersionUpgrade,
       allowMajorVersionUpgrade: props.instanceProps.allowMajorVersionUpgrade,
       deleteAutomatedBackups: props.instanceProps.deleteAutomatedBackups,
