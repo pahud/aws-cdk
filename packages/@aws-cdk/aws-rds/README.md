@@ -727,6 +727,86 @@ new rds.ServerlessClusterFromSnapshot(this, 'Cluster', {
 });
 ```
 
+## Aurora Serverless v2 support
+
+Aurora Serverless v2 is an on-demand, autoscaling configuration for Amazon Aurora. Aurora Serverless v2 helps to automate the processes of monitoring the workload and adjusting the capacity for your databases. Capacity is adjusted automatically based on application demand. 
+Read [Using Aurora Serverless v2](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.html) for more details.
+
+### Using Aurora Serverless v2 for existing provisioned workloads
+
+Aurora Serverless v2 allows you to add one or more Aurora Serverless v2 DB instances to the existing cluster as reader DB instances. Make sure the cluster engine is compatible with Aurora Serverless v2 and add the `serverlessV2Scaling` before adding serverless instances into the cluster. Please note some AWS Regions may not support this feature. Check out the supported engines and Region availability in this [document](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.Aurora_Fea_Regions_DB-eng.Feature.ServerlessV2.html).
+
+```ts
+const cluster = new rds.DatabaseCluster(this, 'Database', {
+  ...
+  instances: 2,
+  // make sure the engine is compatible with serverless v2.
+  engine: rds.DatabaseClusterEngine.auroraMysql({ version: rds.AuroraMysqlEngineVersion.VER_3_02_1 }),
+  // required before you are allowed to add serverless instances
+  serverlessV2Scaling: {
+    maxCapacity: 4,
+    minCapacity: 0.5,
+  },
+});
+// add a serverless reader
+cluster.addServerlessInstance('InstanceId')
+```
+
+### Using Aurora Serverless v2 for new provisioned workloads
+
+To create a provisioned cluster with serverless instances only, specify `instances` to 0.
+
+```ts
+const cluster = new rds.DatabaseCluster(this, 'Database', {
+  ...
+  // do not create any provisioned instances with this cluster
+  instances: 0,
+  engine,
+  serverlessV2Scaling,
+});
+cluster.addServerlessInstance('InstanceA');
+cluster.addServerlessInstance('InstanceB');
+```
+
+To create a provisioned cluster with a serverless writer and a provisioned reader:
+
+```ts
+const cluster = new rds.DatabaseCluster(this, 'Database', {
+  ...
+  // do not create any provisioned instances with this cluster
+  instances: 0,
+  engine,
+  serverlessV2Scaling,
+});
+const writer = cluster.addServerlessInstance('Writer');
+const reader = cluster.addProvisionedInstance('Reader');
+// ensure the reader is created after the writer
+reader.node.addDependency(writer);
+```
+
+To create a provisioned cluster with a provisioned writer and a serverless reader:
+
+```ts
+const cluster = new rds.DatabaseCluster(this, 'Database', {
+  ...
+  // do not create any provisioned instances with this cluster
+  instances: 0,
+  engine,
+  serverlessV2Scaling,
+});
+const writer = cluster.addProvisionedInstance('Writer');
+const reader = cluster.addServerlessInstance('Reader');
+// ensure the reader is created after the writer
+reader.node.addDependency(writer);
+```
+
+### Converting from provisioned DB cluster
+
+If you have an existing DB cluster previously provisioned with `DatabaseCluster` construct with provisioned instances only. To covert your provisioned writer to a serverless writer, you need add one or more Aurora Serverless v2 reader DB instances to an existing provisioned cluster and perform a failover to one of the Aurora Serverless v2 DB instances. For the entire cluster to use Aurora Serverless v2 DB instances, remove any provisioned writer DB instances after promoting the Aurora Serverless v2 DB instance to the writer. Read the [doc](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.upgrade.html#aurora-serverless.comparison-requirements) for more details.
+
+
+
+
 ### Data API
 
 You can access your Aurora Serverless DB cluster using the built-in Data API. The Data API doesn't require a persistent connection to the DB cluster. Instead, it provides a secure HTTP endpoint and integration with AWS SDKs.

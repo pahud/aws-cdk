@@ -23,15 +23,17 @@ const instanceProps: rds.InstanceProps = {
   },
 };
 
+const serverlessV2Scaling: rds.ServerlessV2ScalingOptions = {
+  maxCapacity: 4,
+  minCapacity: 0.5,
+};
+
 /**
  * Adding instances into the existing aurora-mysql provisioned cluster that has one provisoined writer and one provisioned reader.
  */
 const cluster1 = new rds.DatabaseCluster(stack, 'cluster1', {
   engine: rds.DatabaseClusterEngine.auroraMysql({ version: rds.AuroraMysqlEngineVersion.VER_3_02_1 }),
-  serverlessV2Scaling: {
-    maxCapacity: 4,
-    minCapacity: 0.5,
-  },
+  serverlessV2Scaling,
   // writer and reader
   instances: 2,
   instanceProps,
@@ -47,10 +49,7 @@ cluster1.addProvisionedInstance('c1instance2');
  */
 const cluster2 = new rds.DatabaseCluster(stack, 'cluster2', {
   engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_14_5 }),
-  serverlessV2Scaling: {
-    maxCapacity: 4,
-    minCapacity: 0.5,
-  },
+  serverlessV2Scaling,
   // writer and reader
   instances: 2,
   instanceProps,
@@ -66,10 +65,7 @@ cluster2.addProvisionedInstance('c2instance2');
  */
 const cluster3 = new rds.DatabaseCluster(stack, 'cluster3', {
   engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_14_5 }),
-  serverlessV2Scaling: {
-    maxCapacity: 4,
-    minCapacity: 0.5,
-  },
+  serverlessV2Scaling,
   instances: 0,
   instanceProps,
   removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -85,10 +81,7 @@ c3reader.node.addDependency(c3writer);
  */
 const cluster4 = new rds.DatabaseCluster(stack, 'cluster4', {
   engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_14_5 }),
-  serverlessV2Scaling: {
-    maxCapacity: 4,
-    minCapacity: 0.5,
-  },
+  serverlessV2Scaling,
   instances: 0,
   instanceProps,
   removalPolicy: cdk.RemovalPolicy.DESTROY,
