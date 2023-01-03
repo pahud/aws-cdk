@@ -12,7 +12,6 @@ import { DatabaseClusterAttributes, IDatabaseCluster } from './cluster-ref';
 import { DatabaseSecret } from './database-secret';
 import { Endpoint } from './endpoint';
 import { NetworkType } from './instance';
-import { IInstanceEngine } from './instance-engine';
 import { IParameterGroup, ParameterGroup } from './parameter-group';
 import { applyDefaultRotationOptions, defaultDeletionProtection, renderCredentials, setupS3ImportExport, helperRemovalPolicy, renderUnless } from './private/util';
 import { BackupProps, Credentials, InstanceProps, PerformanceInsightRetention, RotationSingleUserOptions, RotationMultiUserOptions, SnapshotCredentials } from './props';
@@ -417,6 +416,10 @@ abstract class DatabaseClusterNew extends DatabaseClusterBase {
   protected readonly newCfnProps: CfnDBClusterProps;
   protected readonly securityGroups: ec2.ISecurityGroup[];
   protected readonly subnetGroup: ISubnetGroup;
+
+  /**
+   * The IAM role that permits RDS to send enhanced monitoring metrics to Amazon CloudWatch Logs
+   */
   public abstract readonly monitoringRole?: IRole;
 
   /**
@@ -588,9 +591,8 @@ abstract class DatabaseClusterNew extends DatabaseClusterBase {
         : undefined
     );
     const instanceParameterGroupConfig = instanceParameterGroup?.bindToInstance({});
-    // the default instance type of DatabaseInstance construct is m5.large, which is not compatible with aurora serverless v2 engine versions.
-    // We use R5.large if serverlessV2Scaling is enabled.
-    const instanceType = this.props.instanceProps.instanceType ?? ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MEDIUM);
+    const instanceType = this.props.instanceProps.instanceType ??
+      ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MEDIUM);
     const instance = new CfnDBInstance(this, id, {
       // Link to cluster
       engine: this.props.engine.engineType,
@@ -745,20 +747,6 @@ class ImportedDatabaseCluster extends DatabaseClusterBase implements IDatabaseCl
     }
     return this._instanceEndpoints;
   }
-}
-
-/**
- * Options to create a provisioned instance for Aurora Serverless v2.
- */
-export interface ProvisionedInstanceOptions {
-  /**
-   * The instance engine of the instance.
-   */
-  readonly engine: IInstanceEngine;
-  /**
-   * The instance type of the instance.
-   */
-  readonly instanceType: ec2.InstanceType;
 }
 
 /**

@@ -12,9 +12,9 @@ const env = {
 
 const stack = new cdk.Stack(app, 'aws-cdk-rds-integ', { env });
 
-// const vpc = new ec2.Vpc(stack, 'VPC', { maxAzs: 2, natGateways: 1 });
+const vpc = new ec2.Vpc(stack, 'VPC', { maxAzs: 3, natGateways: 1 });
 
-const vpc = ec2.Vpc.fromLookup(stack, 'MyVpc', { isDefault: true });
+// const vpc = ec2.Vpc.fromLookup(stack, 'MyVpc', { isDefault: true });
 
 const instanceProps: rds.InstanceProps = {
   vpc,
