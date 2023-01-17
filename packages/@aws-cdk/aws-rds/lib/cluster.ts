@@ -4,7 +4,7 @@ import * as kms from '@aws-cdk/aws-kms';
 import * as logs from '@aws-cdk/aws-logs';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
-import { Annotations, Duration, FeatureFlags, RemovalPolicy, Resource, Token } from '@aws-cdk/core';
+import { Annotations, Duration, FeatureFlags, RemovalPolicy, Resource, Token, ResourceProps } from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import { Construct } from 'constructs';
 import { IClusterEngine } from './cluster-engine';
@@ -19,28 +19,12 @@ import { DatabaseProxy, DatabaseProxyOptions, ProxyTarget } from './proxy';
 import { CfnDBCluster, CfnDBClusterProps, CfnDBInstance } from './rds.generated';
 import { ISubnetGroup, SubnetGroup } from './subnet-group';
 
-/**
- * Common properties for a new database cluster or cluster from snapshot.
- */
-interface DatabaseClusterBaseProps {
+
+interface DatabaseClusterCommonProps extends ResourceProps {
   /**
    * What kind of database to start
    */
   readonly engine: IClusterEngine;
-
-  /**
-   * How many replicas/instances to create
-   *
-   * Has to be at least 1.
-   *
-   * @default 2
-   */
-  readonly instances?: number;
-
-  /**
-   * Settings for the individual instances that are launched
-   */
-  readonly instanceProps: InstanceProps;
 
   /**
    * The ordering of updates for instances
@@ -288,6 +272,153 @@ interface DatabaseClusterBaseProps {
    * @default - IPV4
    */
   readonly networkType?: NetworkType;
+}
+
+/**
+ * Common properties for a new database cluster or cluster from snapshot.
+ */
+interface DatabaseClusterBaseProps extends DatabaseClusterCommonProps {
+  /**
+   * How many replicas/instances to create
+   *
+   * Has to be at least 1.
+   *
+   * @default 2
+   */
+  readonly instances?: number;
+
+  /**
+   * Settings for the individual instances that are launched
+   */
+  readonly instanceProps: InstanceProps;
+}
+
+/**
+ * Options for configuring scaling on an Aurora Serverless V2 cluster
+ *
+ */
+export interface ServerlessV2ScalingOptions {
+  /**
+   * The maximum number of Aurora capacity units (ACUs) for a DB instance in an Aurora Serverless v2 cluster.
+   * You can specify ACU values in half-step increments, such as 40, 40.5, 41, and so on. The largest value that you can use is 128.
+   * The maximum capacity must be higher than 0.5 ACUs.
+   *
+   * @default - minCapacity + 0.5
+   *
+   * @see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbcluster-serverlessv2scalingconfiguration.html#cfn-rds-dbcluster-serverlessv2scalingconfiguration-maxcapacity
+   * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max_capacity_considerations
+   */
+  readonly maxCapacity?: number;
+
+  /**
+   * The minimum number of Aurora capacity units (ACUs) for a DB instance in an Aurora Serverless v2 cluster.
+   * You can specify ACU values in half-step increments, such as 8, 8.5, 9, and so on. The smallest value that you can use is 0.5.
+   *
+   * @default 0.5
+   *
+   * @see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbcluster-serverlessv2scalingconfiguration.html#cfn-rds-dbcluster-serverlessv2scalingconfiguration-mincapacity
+   * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max_capacity_considerations
+   */
+  readonly minCapacity?: number;
+}
+
+// export enum DatabaseInstanceClass {
+//   SERVERLESS,
+//   PROVISIONED,
+// };
+
+export interface IDatabaseClusterV2Instance {
+  /**
+   * Indicate wheter this is a serverless instance
+   * @default false
+   */
+  readonly serverless?: boolean;
+  /**
+   * The instance type of this instance
+   * @default - None. Indicating a serverless instance rather than a provisioned one.
+   */
+  readonly instanceType?: ec2.InstanceType;
+}
+
+export interface DatabaseClusterV2Props extends DatabaseClusterCommonProps {
+  readonly vpc: ec2.IVpc;
+  readonly subnets?: ec2.SubnetSelection;
+  readonly writer: IDatabaseClusterV2Instance;
+  readonly readers?: IDatabaseClusterV2Instance[];
+  readonly scaling?: ServerlessV2ScalingOptions;
+  readonly securityGroups?: ec2.ISecurityGroup[];
+  readonly serverlessV2Scaling?: ServerlessV2ScalingOptions;
+  /**
+   * Credentials for the administrative user
+   *
+   * @default - A username of 'admin' (or 'postgres' for PostgreSQL) and SecretsManager-generated password
+   */
+  readonly credentials?: Credentials;
+
+  /**
+   * Whether to enable Performance Insights for the DB instance.
+   *
+   * @default - false, unless ``performanceInsightRentention`` or ``performanceInsightEncryptionKey`` is set.
+   */
+  readonly enablePerformanceInsights?: boolean;
+
+  /**
+   * The amount of time, in days, to retain Performance Insights data.
+   *
+   * @default 7
+   */
+  readonly performanceInsightRetention?: PerformanceInsightRetention;
+
+  /**
+   * The AWS KMS key for encryption of Performance Insights data.
+   *
+   * @default - default master key
+   */
+  readonly performanceInsightEncryptionKey?: kms.IKey;
+
+  /**
+   * The DB parameter group to associate with the instance.
+   *
+   * @default no parameter group
+   */
+  readonly parameterGroup?: IParameterGroup;
+
+  /**
+   * The parameters in the DBParameterGroup to create automatically
+   *
+   * You can only specify parameterGroup or parameters but not both.
+   * You need to use a versioned engine to auto-generate a DBParameterGroup.
+   *
+   * @default - None
+   */
+  readonly parameters?: { [key: string]: string };
+
+  /**
+   * Whether to enable automatic upgrade of minor version for the DB instance.
+   *
+   * @default - true
+   */
+  readonly autoMinorVersionUpgrade?: boolean;
+
+  /**
+   * Whether to allow upgrade of major version for the DB instance.
+   *
+   * @default - false
+   */
+  readonly allowMajorVersionUpgrade?: boolean;
+
+  /**
+   *  Whether to remove automated backups immediately after the DB instance is deleted for the DB instance.
+   *
+   * @default - true
+   */
+  readonly deleteAutomatedBackups?: boolean;
+  /**
+   * Indicates whether the DB instance is an internet-facing instance.
+   *
+   * @default - `true` if `vpcSubnets` is `subnetType: SubnetType.PUBLIC`, `false` otherwise
+   */
+  readonly publiclyAccessible?: boolean;
 }
 
 /**

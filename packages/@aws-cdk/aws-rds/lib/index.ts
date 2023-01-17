@@ -1,6 +1,7 @@
 export * from './engine';
 export * from './engine-version';
 export * from './cluster';
+export * from './clusterv2';
 export * from './cluster-ref';
 export * from './cluster-engine';
 export * from './instance-engine';
