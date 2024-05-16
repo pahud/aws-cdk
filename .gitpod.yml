@@ -18,3 +18,4 @@ tasks:
 vscode:
   extensions:
     - dbaeumer.vscode-eslint
+    - https://github.com/aws/aws-toolkit-vscode/releases/download/amazonq%2Fv1.4.0/amazon-q-vscode-1.4.0.vsix
