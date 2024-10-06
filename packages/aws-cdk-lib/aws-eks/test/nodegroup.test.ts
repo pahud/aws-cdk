@@ -7,6 +7,7 @@ import * as cdk from '../../core';
 import * as cxapi from '../../cx-api';
 import * as eks from '../lib';
 import { NodegroupAmiType, TaintEffect } from '../lib';
+import { isGpuInstanceType } from '../lib/private/nodegroup';
 
 /* eslint-disable max-len */
 
@@ -1733,5 +1734,44 @@ describe('node group', () => {
     });
     // THEN
     expect(() => cluster.addNodegroupCapacity('ng', { maxUnavailablePercentage: 101 })).toThrow(/maxUnavailablePercentage must be between 1 and 100/);
+  });
+});
+
+describe('isGpuec2.InstanceType', () => {
+  it('should return true for known GPU instance types', () => {
+    const gpuInstances = [
+      ec2.InstanceType.of(ec2.InstanceClass.P2, ec2.InstanceSize.XLARGE),
+      ec2.InstanceType.of(ec2.InstanceClass.G3, ec2.InstanceSize.XLARGE),
+      ec2.InstanceType.of(ec2.InstanceClass.P4D, ec2.InstanceSize.LARGE),
+      ec2.InstanceType.of(ec2.InstanceClass.G6, ec2.InstanceSize.MEDIUM),
+    ];
+
+    gpuInstances.forEach(instance => {
+      expect(isGpuInstanceType(instance)).toBe(true);
+    });
+  });
+
+  it('should return false for non-GPU instance types', () => {
+    const nonGpuInstances = [
+      ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
+      ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.LARGE),
+      ec2.InstanceType.of(ec2.InstanceClass.C5, ec2.InstanceSize.XLARGE),
+    ];
+
+    nonGpuInstances.forEach(instance => {
+      expect(isGpuInstanceType(instance)).toBe(false);
+    });
+  });
+
+  it('should return true for different sizes of GPU instance types', () => {
+    const gpuInstances = [
+      ec2.InstanceType.of(ec2.InstanceClass.P3, ec2.InstanceSize.LARGE),
+      ec2.InstanceType.of(ec2.InstanceClass.P3, ec2.InstanceSize.XLARGE),
+      ec2.InstanceType.of(ec2.InstanceClass.P3, ec2.InstanceSize.METAL),
+    ];
+
+    gpuInstances.forEach(instance => {
+      expect(isGpuInstanceType(instance)).toBe(true);
+    });
   });
 });
