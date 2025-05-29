@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 * **elasticloadbalancingv2:** add validation on application listeners for certificates on HTTP protocol ([#34233](https://github.com/aws/aws-cdk/issues/34233)) ([ca065bb](https://github.com/aws/aws-cdk/commit/ca065bbd936372098e7d76e4cf8f890f20d4c085))
+* **elasticloadbalancingv2:** increase maximum load balancer minimumCapacityUnit per AZ from 45000 to 90000 ([#34582](https://github.com/aws/aws-cdk/issues/34582)) ([commit](https://github.com/aws/aws-cdk/commit/))
 * **rds:** fix incorrect import/export combination check in AuroraMysqlEngineVersion.of() ([#33564](https://github.com/aws/aws-cdk/issues/33564)) ([9e41154](https://github.com/aws/aws-cdk/commit/9e41154c31253932520887748307405a3f38d0e7)), closes [#33562](https://github.com/aws/aws-cdk/issues/33562) [#33562](https://github.com/aws/aws-cdk/issues/33562)
 
 ## [2.198.0](https://github.com/aws/aws-cdk/compare/v2.197.0...v2.198.0) (2025-05-22)

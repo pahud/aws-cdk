@@ -568,7 +568,7 @@ const lb = new elbv2.NetworkLoadBalancer(this, 'LB', {
 });
 ```
 
-**Note**: The `minimumCapacityUnit` value is evenly distributed across all active Availability Zones (AZs) for the network load balancer. The distributed value per AZ must be between 2,750 and 45,000 units.
+**Note**: The `minimumCapacityUnit` value is evenly distributed across all active Availability Zones (AZs) for the network load balancer. The distributed value per AZ must be between 2,750 and 90,000 units.
 
 ## Targets and Target Groups
 

@@ -226,7 +226,29 @@ describe('tests', () => {
     });
   });
 
-  test.each([-1, 2750, 5499, 10000.1, 90001])('throw error for invalid range minimum capacity unit', (minimumCapacityUnit) => {
+  test('accepts maximum minimumCapacityUnit value', () => {
+    // GIVEN
+    const stack = new cdk.Stack();
+    const vpc = new ec2.Vpc(stack, 'VPC');
+    
+    // WHEN - using a value just below the maximum (90000 per AZ)
+    const maxValue = 90000 * vpc.availabilityZones.length - 1;
+    new elbv2.NetworkLoadBalancer(stack, 'LB', {
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      minimumCapacityUnit: maxValue,
+    });
+    
+    // THEN - no exception is thrown
+    Template.fromStack(stack).hasResourceProperties('AWS::ElasticLoadBalancingV2::LoadBalancer', {
+      Type: 'network',
+      MinimumLoadBalancerCapacity: {
+        CapacityUnits: maxValue,
+      },
+    });
+  });
+
+  test.each([-1, 2750, 5499, 10000.1, 180001])('throw error for invalid range minimum capacity unit', (minimumCapacityUnit) => {
     // GIVEN
     const stack = new cdk.Stack();
     // two AZs
@@ -240,7 +262,7 @@ describe('tests', () => {
         vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
         minimumCapacityUnit,
       });
-    }).toThrow(`'minimumCapacityUnit' must be a positive value between 2750 and 45000 per AZ for Network Load Balancer, got ${capacityUnitPerAz} LCU per AZ.`);
+    }).toThrow(`'minimumCapacityUnit' must be a positive value between 2750 and 90000 per AZ for Network Load Balancer, got ${capacityUnitPerAz} LCU per AZ.`);
   });
 
   test('Trivial construction: internet facing', () => {
