@@ -50,6 +50,7 @@ export const ROUTE_53_BUCKET_WEBSITE_ZONE_IDS: { [region: string]: string } = {
 export const EBS_ENV_ENDPOINT_HOSTED_ZONE_IDS: { [region: string]: string } = {
   'af-south-1': 'Z1EI3BVKMKK4AM',
   'ap-east-1': 'ZPWYUBWRU171A',
+  'ap-east-2': 'Z0923487146IKMTYR32O',
   'ap-northeast-1': 'Z1R25G3KIG2GBW',
   'ap-northeast-2': 'Z3JE5OI70TWKCP',
   'ap-northeast-3': 'ZNE5GEY1TIAGY',
@@ -127,6 +128,7 @@ export const LATEST_NODE_RUNTIME_MAP: Record<Partition, string> = {
 export const ELBV2_ACCOUNTS: { [region: string]: string } = {
   'af-south-1': '098369216593',
   'ap-east-1': '754344448648',
+  'ap-east-2': '826293736237',
   'ap-northeast-1': '582318560864',
   'ap-northeast-2': '600734575887',
   'ap-northeast-3': '383597477331',
@@ -226,6 +228,7 @@ export const APPCONFIG_LAMBDA_LAYER_ARNS: { [key: string]: any } = {
     arm64: {
       'af-south-1': 'arn:aws:lambda:af-south-1:574348263942:layer:AWS-AppConfig-Extension-Arm64:1',
       'ap-east-1': 'arn:aws:lambda:ap-east-1:630222743974:layer:AWS-AppConfig-Extension-Arm64:1',
+      'ap-east-2': 'arn:aws:lambda:ap-east-2:247377678817:layer:AWS-AppConfig-Extension-Arm64:1',
       'ap-northeast-1': 'arn:aws:lambda:ap-northeast-1:980059726660:layer:AWS-AppConfig-Extension-Arm64:37',
       'ap-northeast-2': 'arn:aws:lambda:ap-northeast-2:826293736237:layer:AWS-AppConfig-Extension-Arm64:1',
       'ap-northeast-3': 'arn:aws:lambda:ap-northeast-3:706869817123:layer:AWS-AppConfig-Extension-Arm64:1',
@@ -250,6 +253,7 @@ export const APPCONFIG_LAMBDA_LAYER_ARNS: { [key: string]: any } = {
     x86_64: {
       'af-south-1': 'arn:aws:lambda:af-south-1:574348263942:layer:AWS-AppConfig-Extension:73',
       'ap-east-1': 'arn:aws:lambda:ap-east-1:630222743974:layer:AWS-AppConfig-Extension:73',
+      'ap-east-2': 'arn:aws:lambda:ap-east-2:247377678817:layer:AWS-AppConfig-Extension:73',
       'ap-northeast-1': 'arn:aws:lambda:ap-northeast-1:980059726660:layer:AWS-AppConfig-Extension:84',
       'ap-northeast-2': 'arn:aws:lambda:ap-northeast-2:826293736237:layer:AWS-AppConfig-Extension:93',
       'ap-northeast-3': 'arn:aws:lambda:ap-northeast-3:706869817123:layer:AWS-AppConfig-Extension:86',
@@ -496,6 +500,7 @@ export const CLOUDWATCH_LAMBDA_INSIGHTS_ARNS: { [key: string]: any } = {
       'us-west-2': 'arn:aws:lambda:us-west-2:580247275435:layer:LambdaInsightsExtension-Arm64:22',
       'af-south-1': 'arn:aws:lambda:af-south-1:012438385374:layer:LambdaInsightsExtension-Arm64:20',
       'ap-east-1': 'arn:aws:lambda:ap-east-1:519774774795:layer:LambdaInsightsExtension-Arm64:20',
+      'ap-east-2': 'arn:aws:lambda:ap-east-2:519774774795:layer:LambdaInsightsExtension-Arm64:20',
       'ap-south-2': 'arn:aws:lambda:ap-south-2:891564319516:layer:LambdaInsightsExtension-Arm64:8',
       'ap-southeast-3': 'arn:aws:lambda:ap-southeast-3:439286490199:layer:LambdaInsightsExtension-Arm64:20',
       'ap-south-1': 'arn:aws:lambda:ap-south-1:580247275435:layer:LambdaInsightsExtension-Arm64:24',
@@ -524,6 +529,7 @@ export const CLOUDWATCH_LAMBDA_INSIGHTS_ARNS: { [key: string]: any } = {
       'us-west-2': 'arn:aws:lambda:us-west-2:580247275435:layer:LambdaInsightsExtension:55',
       'af-south-1': 'arn:aws:lambda:af-south-1:012438385374:layer:LambdaInsightsExtension:456',
       'ap-east-1': 'arn:aws:lambda:ap-east-1:519774774795:layer:LambdaInsightsExtension:46',
+      'ap-east-2': 'arn:aws:lambda:ap-east-2:519774774795:layer:LambdaInsightsExtension:46',
       'ap-south-2': 'arn:aws:lambda:ap-south-2:891564319516:layer:LambdaInsightsExtension:28',
       'ap-southeast-3': 'arn:aws:lambda:ap-southeast-3:439286490199:layer:LambdaInsightsExtension:32',
       'ap-southeast-5': 'arn:aws:lambda:ap-southeast-5:590183865173:layer:LambdaInsightsExtension:3',
@@ -563,6 +569,7 @@ export const CLOUDWATCH_LAMBDA_INSIGHTS_ARNS: { [key: string]: any } = {
       'us-west-2': 'arn:aws:lambda:us-west-2:580247275435:layer:LambdaInsightsExtension-Arm64:20',
       'af-south-1': 'arn:aws:lambda:af-south-1:012438385374:layer:LambdaInsightsExtension-Arm64:18',
       'ap-east-1': 'arn:aws:lambda:ap-east-1:519774774795:layer:LambdaInsightsExtension-Arm64:18',
+      'ap-east-2': 'arn:aws:lambda:ap-east-2:519774774795:layer:LambdaInsightsExtension-Arm64:18',
       'ap-south-2': 'arn:aws:lambda:ap-south-2:891564319516:layer:LambdaInsightsExtension-Arm64:6',
       'ap-southeast-3': 'arn:aws:lambda:ap-southeast-3:439286490199:layer:LambdaInsightsExtension-Arm64:18',
       'ap-south-1': 'arn:aws:lambda:ap-south-1:580247275435:layer:LambdaInsightsExtension-Arm64:22',
@@ -591,6 +598,7 @@ export const CLOUDWATCH_LAMBDA_INSIGHTS_ARNS: { [key: string]: any } = {
       'us-west-2': 'arn:aws:lambda:us-west-2:580247275435:layer:LambdaInsightsExtension:53',
       'af-south-1': 'arn:aws:lambda:af-south-1:012438385374:layer:LambdaInsightsExtension:44',
       'ap-east-1': 'arn:aws:lambda:ap-east-1:519774774795:layer:LambdaInsightsExtension:44',
+      'ap-east-2': 'arn:aws:lambda:ap-east-2:519774774795:layer:LambdaInsightsExtension:44',
       'ap-south-2': 'arn:aws:lambda:ap-south-2:891564319516:layer:LambdaInsightsExtension:26',
       'ap-southeast-3': 'arn:aws:lambda:ap-southeast-3:439286490199:layer:LambdaInsightsExtension:30',
       'ap-southeast-4': 'arn:aws:lambda:ap-southeast-4:158895979263:layer:LambdaInsightsExtension:21',
