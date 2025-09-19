@@ -1,0 +1,49 @@
+name: Lint Fix on Push
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+      - v1-main
+      - v2-main
+    paths:
+      - 'packages/aws-cdk-lib/**'
+      - 'packages/@aws-cdk-testing/framework-integ/**'
+
+jobs:
+  lint-fix:
+    runs-on: ubuntu-latest
+    if: github.repository == 'pahud/aws-cdk'
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+      
+      - run: yarn install --frozen-lockfile
+      
+      - name: Lint fix aws-cdk-lib
+        working-directory: packages/aws-cdk-lib
+        run: yarn lint --fix
+        continue-on-error: true
+      
+      - name: Lint fix framework-integ
+        working-directory: packages/@aws-cdk-testing/framework-integ
+        run: yarn lint --fix
+        continue-on-error: true
+      
+      - name: Auto-commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-fix lint issues [skip ci]"
+            git push
+          fi
