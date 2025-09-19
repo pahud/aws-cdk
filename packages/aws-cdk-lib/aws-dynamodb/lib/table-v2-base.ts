@@ -60,6 +60,12 @@ export abstract class TableBaseV2 extends Resource implements ITableV2, IResourc
    */
   public abstract resourcePolicy?: PolicyDocument;
 
+  /**
+   * Internal resource policy document for lazy evaluation
+   * @internal
+   */
+  protected abstract _resourcePolicyDocument?: PolicyDocument;
+
   protected abstract readonly region: string;
 
   protected abstract get hasIndex(): boolean;
@@ -472,8 +478,10 @@ export abstract class TableBaseV2 extends Resource implements ITableV2, IResourc
    * @param statement The policy statement to add
    */
   public addToResourcePolicy(statement: PolicyStatement): AddToResourcePolicyResult {
+    // Update both the public property and internal document for lazy evaluation
     this.resourcePolicy = this.resourcePolicy ?? new PolicyDocument({ statements: [] });
     this.resourcePolicy.addStatements(statement);
+    this._resourcePolicyDocument = this.resourcePolicy;
     return {
       statementAdded: true,
       policyDependable: this,

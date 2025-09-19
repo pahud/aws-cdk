@@ -3951,6 +3951,161 @@ test('Resource policy test', () => {
   });
 });
 
+test('addToResourcePolicy method functionality', () => {
+  // GIVEN
+  const app = new App();
+  const stack = new Stack(app, 'Stack');
+
+  const table = new Table(stack, 'Table', {
+    partitionKey: { name: 'id', type: AttributeType.STRING },
+  });
+
+  // WHEN
+  table.addToResourcePolicy(new iam.PolicyStatement({
+    actions: ['dynamodb:GetItem'],
+    principals: [new iam.ArnPrincipal('arn:aws:iam::111122223333:user/testuser')],
+    resources: ['arn:aws:dynamodb:us-east-1:111122223333:table/test-table'],
+  }));
+
+  // THEN
+  Template.fromStack(stack).hasResourceProperties('AWS::DynamoDB::Table', {
+    'ResourcePolicy': {
+      'PolicyDocument': {
+        'Version': '2012-10-17',
+        'Statement': [
+          {
+            'Principal': {
+              'AWS': 'arn:aws:iam::111122223333:user/testuser',
+            },
+            'Effect': 'Allow',
+            'Action': 'dynamodb:GetItem',
+            'Resource': 'arn:aws:dynamodb:us-east-1:111122223333:table/test-table',
+          },
+        ],
+      },
+    },
+  });
+});
+
+test('addToResourcePolicy with constructor resourcePolicy', () => {
+  // GIVEN
+  const app = new App();
+  const stack = new Stack(app, 'Stack');
+
+  const constructorDoc = new iam.PolicyDocument({
+    statements: [
+      new iam.PolicyStatement({
+        actions: ['dynamodb:PutItem'],
+        principals: [new iam.ArnPrincipal('arn:aws:iam::111122223333:user/constructor')],
+        resources: ['*'],
+      }),
+    ],
+  });
+
+  const table = new Table(stack, 'Table', {
+    partitionKey: { name: 'id', type: AttributeType.STRING },
+    resourcePolicy: constructorDoc,
+  });
+
+  // WHEN
+  table.addToResourcePolicy(new iam.PolicyStatement({
+    actions: ['dynamodb:GetItem'],
+    principals: [new iam.ArnPrincipal('arn:aws:iam::111122223333:user/added')],
+    resources: ['arn:aws:dynamodb:us-east-1:111122223333:table/test-table'],
+  }));
+
+  // THEN
+  Template.fromStack(stack).hasResourceProperties('AWS::DynamoDB::Table', {
+    'ResourcePolicy': {
+      'PolicyDocument': {
+        'Version': '2012-10-17',
+        'Statement': [
+          {
+            'Principal': {
+              'AWS': 'arn:aws:iam::111122223333:user/constructor',
+            },
+            'Effect': 'Allow',
+            'Action': 'dynamodb:PutItem',
+            'Resource': '*',
+          },
+          {
+            'Principal': {
+              'AWS': 'arn:aws:iam::111122223333:user/added',
+            },
+            'Effect': 'Allow',
+            'Action': 'dynamodb:GetItem',
+            'Resource': 'arn:aws:dynamodb:us-east-1:111122223333:table/test-table',
+          },
+        ],
+      },
+    },
+  });
+});
+
+test('multiple addToResourcePolicy calls', () => {
+  // GIVEN
+  const app = new App();
+  const stack = new Stack(app, 'Stack');
+
+  const table = new Table(stack, 'Table', {
+    partitionKey: { name: 'id', type: AttributeType.STRING },
+  });
+
+  // WHEN
+  table.addToResourcePolicy(new iam.PolicyStatement({
+    actions: ['dynamodb:GetItem'],
+    principals: [new iam.ArnPrincipal('arn:aws:iam::111122223333:user/first')],
+    resources: ['arn:aws:dynamodb:us-east-1:111122223333:table/test-table'],
+  }));
+
+  table.addToResourcePolicy(new iam.PolicyStatement({
+    actions: ['dynamodb:PutItem'],
+    principals: [new iam.ArnPrincipal('arn:aws:iam::111122223333:user/second')],
+    resources: ['arn:aws:dynamodb:us-east-1:111122223333:table/test-table'],
+  }));
+
+  table.addToResourcePolicy(new iam.PolicyStatement({
+    actions: ['dynamodb:DeleteItem'],
+    principals: [new iam.ArnPrincipal('arn:aws:iam::111122223333:user/third')],
+    resources: ['arn:aws:dynamodb:us-east-1:111122223333:table/test-table'],
+  }));
+
+  // THEN
+  Template.fromStack(stack).hasResourceProperties('AWS::DynamoDB::Table', {
+    'ResourcePolicy': {
+      'PolicyDocument': {
+        'Version': '2012-10-17',
+        'Statement': [
+          {
+            'Principal': {
+              'AWS': 'arn:aws:iam::111122223333:user/first',
+            },
+            'Effect': 'Allow',
+            'Action': 'dynamodb:GetItem',
+            'Resource': 'arn:aws:dynamodb:us-east-1:111122223333:table/test-table',
+          },
+          {
+            'Principal': {
+              'AWS': 'arn:aws:iam::111122223333:user/second',
+            },
+            'Effect': 'Allow',
+            'Action': 'dynamodb:PutItem',
+            'Resource': 'arn:aws:dynamodb:us-east-1:111122223333:table/test-table',
+          },
+          {
+            'Principal': {
+              'AWS': 'arn:aws:iam::111122223333:user/third',
+            },
+            'Effect': 'Allow',
+            'Action': 'dynamodb:DeleteItem',
+            'Resource': 'arn:aws:dynamodb:us-east-1:111122223333:table/test-table',
+          },
+        ],
+      },
+    },
+  });
+});
+
 test('Warm Throughput test on-demand', () => {
   // GIVEN
   const app = new App();

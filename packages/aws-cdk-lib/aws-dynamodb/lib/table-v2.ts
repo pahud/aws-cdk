@@ -507,6 +507,11 @@ export class TableV2 extends TableBaseV2 {
         (attrs.globalIndexes ?? []).length > 0 ||
         (attrs.localIndexes ?? []).length > 0;
 
+      /**
+       * @internal
+       */
+      protected _resourcePolicyDocument?: PolicyDocument;
+
       public constructor(tableArn: string, tableName: string, tableId?: string, tableStreamArn?: string, resourcePolicy?: PolicyDocument) {
         super(scope, id, { environmentFromArn: tableArn });
 
@@ -522,6 +527,7 @@ export class TableV2 extends TableBaseV2 {
         this.tableStreamArn = tableStreamArn;
         this.encryptionKey = attrs.encryptionKey;
         this.resourcePolicy = resourcePolicy;
+        this._resourcePolicyDocument = resourcePolicy;
       }
     }
 
@@ -580,7 +586,19 @@ export class TableV2 extends TableBaseV2 {
   /**
    * @attribute
    */
-  public resourcePolicy?: PolicyDocument;
+  public get resourcePolicy(): PolicyDocument | undefined {
+    return this._resourcePolicyDocument;
+  }
+
+  public set resourcePolicy(policy: PolicyDocument | undefined) {
+    this._resourcePolicyDocument = policy;
+  }
+
+  /**
+   * Internal resource policy document for lazy evaluation
+   * @internal
+   */
+  protected _resourcePolicyDocument?: PolicyDocument;
 
   protected readonly region: string;
 
@@ -618,6 +636,9 @@ export class TableV2 extends TableBaseV2 {
     addConstructMetadata(this, props);
 
     this.tableOptions = props;
+    // Initialize resource policy state
+    this.resourcePolicy = props.resourcePolicy;
+    this._resourcePolicyDocument = props.resourcePolicy;
     this.partitionKey = props.partitionKey;
     this.hasSortKey = props.sortKey !== undefined;
     this.region = this.stack.region;
@@ -806,10 +827,6 @@ export class TableV2 extends TableBaseV2 {
     * @see https://github.com/aws/aws-cdk/pull/31097
     * @see https://github.com/aws/aws-cdk/blob/main/packages/%40aws-cdk/cx-api/FEATURE_FLAGS.md
     */
-    const resourcePolicy = FeatureFlags.of(this).isEnabled(cxapi.DYNAMODB_TABLEV2_RESOURCE_POLICY_PER_REPLICA)
-      ? (props.region === this.region ? this.tableOptions.resourcePolicy : props.resourcePolicy) || undefined
-      : props.resourcePolicy ?? this.tableOptions.resourcePolicy;
-
     const propTags: Record<string, string> = (props.tags ?? []).reduce((p, item) =>
       ({ ...p, [item.key]: item.value }), {},
     );
@@ -839,9 +856,14 @@ export class TableV2 extends TableBaseV2 {
         : this.maxReadRequestUnits
           ? { maxReadRequestUnits: this.maxReadRequestUnits }
           : undefined,
-      resourcePolicy: resourcePolicy
-        ? { policyDocument: resourcePolicy }
-        : undefined,
+      resourcePolicy: Lazy.any({
+        produce: () => {
+          const policy = FeatureFlags.of(this).isEnabled(cxapi.DYNAMODB_TABLEV2_RESOURCE_POLICY_PER_REPLICA)
+            ? (props.region === this.region ? this._resourcePolicyDocument : props.resourcePolicy) || undefined
+            : props.resourcePolicy ?? this._resourcePolicyDocument;
+          return policy ? { policyDocument: policy } : undefined;
+        },
+      }),
     };
   }
 
@@ -964,6 +986,7 @@ export class TableV2 extends TableBaseV2 {
       region: this.stack.region,
       kinesisStream: this.tableOptions.kinesisStream,
       tags: this.tableOptions.tags,
+      resourcePolicy: this._resourcePolicyDocument,
     }));
 
     return replicaTables;

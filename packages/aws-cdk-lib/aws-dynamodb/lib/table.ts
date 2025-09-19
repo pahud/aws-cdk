@@ -650,6 +650,11 @@ export abstract class TableBase extends Resource implements ITable, iam.IResourc
    */
   public abstract resourcePolicy?: iam.PolicyDocument;
 
+  /**
+   * @internal
+   */
+  protected abstract _resourcePolicyDocument?: iam.PolicyDocument;
+
   protected readonly regionalArns = new Array<string>();
 
   /**
@@ -799,8 +804,13 @@ export abstract class TableBase extends Resource implements ITable, iam.IResourc
    * @param statement The policy statement to add
    */
   public addToResourcePolicy(statement: iam.PolicyStatement): iam.AddToResourcePolicyResult {
+    // Update both the public property and internal document for lazy evaluation
     this.resourcePolicy = this.resourcePolicy ?? new iam.PolicyDocument({ statements: [] });
     this.resourcePolicy.addStatements(statement);
+
+    // Ensure internal document includes both constructor and added policies
+    this._resourcePolicyDocument = this.resourcePolicy;
+
     return {
       statementAdded: true,
       policyDependable: this,
@@ -1152,12 +1162,18 @@ export class Table extends TableBase {
         (attrs.globalIndexes ?? []).length > 0 ||
         (attrs.localIndexes ?? []).length > 0;
 
+      /**
+       * @internal
+       */
+      protected _resourcePolicyDocument?: iam.PolicyDocument;
+
       constructor(_tableArn: string, tableName: string, tableStreamArn?: string) {
         super(scope, id);
         this.tableArn = _tableArn;
         this.tableName = tableName;
         this.tableStreamArn = tableStreamArn;
         this.encryptionKey = attrs.encryptionKey;
+        this._resourcePolicyDocument = undefined;
       }
     }
 
@@ -1197,7 +1213,19 @@ export class Table extends TableBase {
    * @see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-dynamodb-table-resourcepolicy.html
    * @default - No resource policy statements are added to the created table.
    */
-  public resourcePolicy?: iam.PolicyDocument;
+  public get resourcePolicy(): iam.PolicyDocument | undefined {
+    return this._resourcePolicyDocument;
+  }
+
+  public set resourcePolicy(policy: iam.PolicyDocument | undefined) {
+    this._resourcePolicyDocument = policy;
+  }
+
+  /**
+   * Internal resource policy document for lazy evaluation
+   * @internal
+   */
+  protected _resourcePolicyDocument?: iam.PolicyDocument;
 
   /**
    * @attribute
@@ -1240,6 +1268,10 @@ export class Table extends TableBase {
     });
     // Enhanced CDK Analytics Telemetry
     addConstructMetadata(this, props);
+
+    // Initialize resource policy state
+    this.resourcePolicy = props.resourcePolicy;
+    this._resourcePolicyDocument = props.resourcePolicy;
 
     const { sseSpecification, encryptionKey } = this.parseEncryption(props);
 
@@ -1297,9 +1329,10 @@ export class Table extends TableBase {
       kinesisStreamSpecification: kinesisStreamSpecification,
       deletionProtectionEnabled: props.deletionProtection,
       importSourceSpecification: this.renderImportSourceSpecification(props.importSource),
-      resourcePolicy: props.resourcePolicy
-        ? { policyDocument: props.resourcePolicy }
-        : undefined,
+      resourcePolicy: Lazy.any({
+        produce: () =>
+          this._resourcePolicyDocument ? { policyDocument: this._resourcePolicyDocument } : undefined,
+      }),
       warmThroughput: props.warmThroughput?? undefined,
     });
     this.table.applyRemovalPolicy(props.removalPolicy);
@@ -1730,9 +1763,23 @@ export class Table extends TableBase {
     const onEventHandlerPolicy = new SourceTableAttachedPolicy(this, provider.onEventHandler.role!);
     const isCompleteHandlerPolicy = new SourceTableAttachedPolicy(this, provider.isCompleteHandler.role!);
 
-    // Permissions in the source region
-    this.grant(onEventHandlerPolicy, 'dynamodb:*');
-    this.grant(isCompleteHandlerPolicy, 'dynamodb:DescribeTable');
+    // Permissions in the source region - add directly to role policy to avoid circular dependency
+    // through resource policy on the table
+    onEventHandlerPolicy.grantPrincipal.addToPrincipalPolicy(new iam.PolicyStatement({
+      actions: ['dynamodb:*'],
+      resources: [
+        this.tableArn,
+        Lazy.string({ produce: () => this.hasIndex ? `${this.tableArn}/index/*` : Aws.NO_VALUE }),
+      ],
+    }));
+
+    isCompleteHandlerPolicy.grantPrincipal.addToPrincipalPolicy(new iam.PolicyStatement({
+      actions: ['dynamodb:DescribeTable'],
+      resources: [
+        this.tableArn,
+        Lazy.string({ produce: () => this.hasIndex ? `${this.tableArn}/index/*` : Aws.NO_VALUE }),
+      ],
+    }));
 
     let previousRegion: CustomResource | undefined;
     let previousRegionCondition: CfnCondition | undefined;

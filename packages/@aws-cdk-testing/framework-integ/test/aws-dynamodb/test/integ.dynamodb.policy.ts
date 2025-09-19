@@ -7,6 +7,7 @@ import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 export class TestStack extends Stack {
   readonly table: dynamodb.Table;
   readonly tableTwo: dynamodb.Table;
+  readonly tableWithAddedPolicy: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -39,6 +40,21 @@ export class TestStack extends Stack {
     });
 
     this.tableTwo.grantReadData(new iam.AccountPrincipal('123456789012'));
+
+    // Test addToResourcePolicy functionality (the bug fix)
+    this.tableWithAddedPolicy = new dynamodb.Table(this, 'TableTest3', {
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.STRING,
+      },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    this.tableWithAddedPolicy.addToResourcePolicy(new iam.PolicyStatement({
+      actions: ['dynamodb:GetItem'],
+      principals: [new iam.ArnPrincipal('arn:aws:iam::111122223333:user/testuser')],
+      resources: [this.tableWithAddedPolicy.tableArn],
+    }));
   }
 }
 
