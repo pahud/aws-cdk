@@ -97,8 +97,13 @@ jobs:
           PR_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           mkdir -p ./pr
+<<<<<<< HEAD
           echo $PR_NUMBER > ./pr/pr_number
           echo $PR_SHA > ./pr/pr_sha
+=======
+          echo "${{ github.event.pull_request.number }}" > ./pr/pr_number
+          echo "${{ github.event.pull_request.head.sha }}" > ./pr/pr_sha
+>>>>>>> 7fa4e76a0e (Update .github/workflows/codebuild-pr-build.yml)
 
       - name: Upload PR info artifact
         if: github.event_name == 'pull_request'
