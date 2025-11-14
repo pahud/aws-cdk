@@ -26,8 +26,8 @@ jobs:
   build:
     # Runner exists only for aws-cdk repo
     if: github.repository == 'pahud/aws-cdk'
-    # runs-on: ubuntu-latest
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    # runs-on: self-hosted
     # runs-on: codebuild-aws-cdk-github-actions-runner-${{ github.run_id }}-${{ github.run_attempt }}
 
     env:
