@@ -6,7 +6,7 @@ import { addConstructMetadata } from '../../core/lib/metadata-resource';
 import { propertyInjectable } from '../../core/lib/prop-injectable';
 
 /**
- * Represents an Amazon EKS Add-On.
+ * Represents an Amazon EKS Add-On. This is a random test comment to trigger CodeBuild
  */
 export interface IAddon extends IResource {
   /**
