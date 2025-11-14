@@ -122,8 +122,6 @@ The following is a qualitative diagram of the various possible components involv
  +--------------------+
 ```
 
-In a nutshell:
-
 * `EKS Cluster` - The cluster endpoint created by EKS.
 * `Managed Node Group` - EC2 worker nodes managed by EKS.
 * `Fargate Profile` - Fargate worker nodes managed by EKS.
