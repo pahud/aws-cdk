@@ -26,8 +26,8 @@ jobs:
   download-if-workflow-run:
     runs-on: ubuntu-latest
     outputs:
-      pr_number: ${{ steps.pr_output.outputs.pr_number }}
-      pr_sha: ${{ steps.pr_output.outputs.pr_sha }}
+      pr_number: ${{ steps.pr_output.outputs.pr_number || steps.pr_output_target.outputs.pr_number }}
+      pr_sha: ${{ steps.pr_output.outputs.pr_sha || steps.pr_output_target.outputs.pr_sha }}
     # if conditions on all individual steps because subsequent jobs depend on this job
     # and we cannot skip it entirely
     steps:
@@ -41,7 +41,7 @@ jobs:
           path: pr/
           search_artifacts: true
 
-      - name: 'Determine PR info'
+      - name: 'Determine PR info from workflow_run'
         # PR info comes from the artifact if downloaded, or GitHub context if not.
         if: github.event_name == 'workflow_run'
         id: 'pr_output'
@@ -55,6 +55,13 @@ jobs:
           cat pr/*
           echo "pr_number=$(cat pr/pr_number)" >> "$GITHUB_OUTPUT"
           echo "pr_sha=$(cat pr/pr_sha)" >> "$GITHUB_OUTPUT"
+
+      - name: 'Get PR info from pull_request_target event'
+        if: github.event_name == 'pull_request_target'
+        id: 'pr_output_target'
+        run: |
+          echo "pr_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          echo "pr_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
 
   validate-pr:
     # Necessary to have sufficient permissions to write to the PR
@@ -76,7 +83,7 @@ jobs:
       - name: Validate
         uses: ./tools/@aws-cdk/prlint
         env:
-          GITHUB_TOKEN: ${{ secrets.PROJEN_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ needs.download-if-workflow-run.outputs.pr_number }}
           PR_SHA: ${{ needs.download-if-workflow-run.outputs.pr_sha }}
           LINTER_LOGIN: ${{ vars.LINTER_LOGIN }}
