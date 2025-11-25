@@ -1674,6 +1674,27 @@ export interface ManagedInstancesCapacityProviderProps {
    * @default PropagateManagedInstancesTags.NONE - no tag propagation
    */
   readonly propagateTags?: PropagateManagedInstancesTags;
+
+  /**
+   * The time period after a scale-in activity completes before another scale-in activity can start.
+   *
+   * This property allows you to configure a delay before ECS can scale in (terminate) instances
+   * after a previous scale-in operation. This helps prevent rapid scaling oscillations and gives
+   * your workload time to stabilize.
+   *
+   * A longer delay increases the likelihood of placing new tasks on idle or underutilized instances,
+   * reducing startup time. A shorter delay helps reduce infrastructure costs by optimizing idle or
+   * underutilized instances more quickly.
+   *
+   * Valid values:
+   * - Not specified: Uses the default optimization behavior
+   * - Duration.seconds(-1): Disables automatic infrastructure optimization
+   * - Duration.seconds(0) to Duration.hours(1): Specifies the delay before optimizing instances
+   *
+   * @default - Uses the default optimization behavior
+   * @see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/managed-instances-infrastructure-optimization.html
+   */
+  readonly scaleInAfter?: Duration;
 }
 
 /**
@@ -1761,6 +1782,11 @@ export class ManagedInstancesCapacityProvider extends Construct implements ec2.I
         }),
       },
       propagateTags: props.propagateTags,
+      ...(props.scaleInAfter && {
+        infrastructureOptimization: {
+          scaleInAfter: props.scaleInAfter.toSeconds(),
+        },
+      }),
     };
 
     // Create the capacity provider

@@ -3685,6 +3685,199 @@ describe('cluster', () => {
     });
   });
 
+  test('ManagedInstancesCapacityProvider with scaleInAfter', () => {
+    // GIVEN
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, 'test');
+    const vpc = new ec2.Vpc(stack, 'Vpc');
+
+    const infrastructureRole = new iam.Role(stack, 'InfrastructureRole', {
+      assumedBy: new iam.ServicePrincipal('ecs.amazonaws.com'),
+    });
+
+    const instanceRole = new iam.Role(stack, 'InstanceRole', {
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
+
+    const instanceProfile = new iam.InstanceProfile(stack, 'InstanceProfile', {
+      role: instanceRole,
+    });
+
+    // WHEN
+    new ecs.ManagedInstancesCapacityProvider(stack, 'provider', {
+      infrastructureRole,
+      ec2InstanceProfile: instanceProfile,
+      subnets: vpc.privateSubnets,
+      scaleInAfter: cdk.Duration.minutes(5),
+    });
+
+    // THEN
+    Template.fromStack(stack).hasResourceProperties('AWS::ECS::CapacityProvider', {
+      ManagedInstancesProvider: {
+        InfrastructureOptimization: {
+          ScaleInAfter: 300,
+        },
+      },
+    });
+  });
+
+  test('ManagedInstancesCapacityProvider with scaleInAfter set to zero', () => {
+    // GIVEN
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, 'test');
+    const vpc = new ec2.Vpc(stack, 'Vpc');
+
+    const infrastructureRole = new iam.Role(stack, 'InfrastructureRole', {
+      assumedBy: new iam.ServicePrincipal('ecs.amazonaws.com'),
+    });
+
+    const instanceRole = new iam.Role(stack, 'InstanceRole', {
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
+
+    const instanceProfile = new iam.InstanceProfile(stack, 'InstanceProfile', {
+      role: instanceRole,
+    });
+
+    // WHEN
+    new ecs.ManagedInstancesCapacityProvider(stack, 'provider', {
+      infrastructureRole,
+      ec2InstanceProfile: instanceProfile,
+      subnets: vpc.privateSubnets,
+      scaleInAfter: cdk.Duration.seconds(0),
+    });
+
+    // THEN
+    Template.fromStack(stack).hasResourceProperties('AWS::ECS::CapacityProvider', {
+      ManagedInstancesProvider: {
+        InfrastructureOptimization: {
+          ScaleInAfter: 0,
+        },
+      },
+    });
+  });
+
+  test('ManagedInstancesCapacityProvider without scaleInAfter uses default', () => {
+    // GIVEN
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, 'test');
+    const vpc = new ec2.Vpc(stack, 'Vpc');
+
+    const infrastructureRole = new iam.Role(stack, 'InfrastructureRole', {
+      assumedBy: new iam.ServicePrincipal('ecs.amazonaws.com'),
+    });
+
+    const instanceRole = new iam.Role(stack, 'InstanceRole', {
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
+
+    const instanceProfile = new iam.InstanceProfile(stack, 'InstanceProfile', {
+      role: instanceRole,
+    });
+
+    // WHEN
+    new ecs.ManagedInstancesCapacityProvider(stack, 'provider', {
+      infrastructureRole,
+      ec2InstanceProfile: instanceProfile,
+      subnets: vpc.privateSubnets,
+    });
+
+    // THEN - InfrastructureOptimization should not be present
+    const template = Template.fromStack(stack);
+    const resources = template.findResources('AWS::ECS::CapacityProvider');
+    const capacityProvider = Object.values(resources)[0];
+    expect(capacityProvider.Properties.ManagedInstancesProvider.InfrastructureOptimization).toBeUndefined();
+  });
+
+  test('ManagedInstancesCapacityProvider scaleInAfter converts Duration correctly', () => {
+    // Test with seconds
+    const app1 = new cdk.App();
+    const stack1 = new cdk.Stack(app1, 'test1');
+    const vpc1 = new ec2.Vpc(stack1, 'Vpc');
+    const infrastructureRole1 = new iam.Role(stack1, 'InfrastructureRole', {
+      assumedBy: new iam.ServicePrincipal('ecs.amazonaws.com'),
+    });
+    const instanceRole1 = new iam.Role(stack1, 'InstanceRole', {
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
+    const instanceProfile1 = new iam.InstanceProfile(stack1, 'InstanceProfile', {
+      role: instanceRole1,
+    });
+
+    new ecs.ManagedInstancesCapacityProvider(stack1, 'provider', {
+      infrastructureRole: infrastructureRole1,
+      ec2InstanceProfile: instanceProfile1,
+      subnets: vpc1.privateSubnets,
+      scaleInAfter: cdk.Duration.seconds(30),
+    });
+
+    Template.fromStack(stack1).hasResourceProperties('AWS::ECS::CapacityProvider', {
+      ManagedInstancesProvider: {
+        InfrastructureOptimization: {
+          ScaleInAfter: 30,
+        },
+      },
+    });
+
+    // Test with minutes
+    const app2 = new cdk.App();
+    const stack2 = new cdk.Stack(app2, 'test2');
+    const vpc2 = new ec2.Vpc(stack2, 'Vpc');
+    const infrastructureRole2 = new iam.Role(stack2, 'InfrastructureRole', {
+      assumedBy: new iam.ServicePrincipal('ecs.amazonaws.com'),
+    });
+    const instanceRole2 = new iam.Role(stack2, 'InstanceRole', {
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
+    const instanceProfile2 = new iam.InstanceProfile(stack2, 'InstanceProfile', {
+      role: instanceRole2,
+    });
+
+    new ecs.ManagedInstancesCapacityProvider(stack2, 'provider', {
+      infrastructureRole: infrastructureRole2,
+      ec2InstanceProfile: instanceProfile2,
+      subnets: vpc2.privateSubnets,
+      scaleInAfter: cdk.Duration.minutes(10),
+    });
+
+    Template.fromStack(stack2).hasResourceProperties('AWS::ECS::CapacityProvider', {
+      ManagedInstancesProvider: {
+        InfrastructureOptimization: {
+          ScaleInAfter: 600,
+        },
+      },
+    });
+
+    // Test with hours
+    const app3 = new cdk.App();
+    const stack3 = new cdk.Stack(app3, 'test3');
+    const vpc3 = new ec2.Vpc(stack3, 'Vpc');
+    const infrastructureRole3 = new iam.Role(stack3, 'InfrastructureRole', {
+      assumedBy: new iam.ServicePrincipal('ecs.amazonaws.com'),
+    });
+    const instanceRole3 = new iam.Role(stack3, 'InstanceRole', {
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
+    const instanceProfile3 = new iam.InstanceProfile(stack3, 'InstanceProfile', {
+      role: instanceRole3,
+    });
+
+    new ecs.ManagedInstancesCapacityProvider(stack3, 'provider', {
+      infrastructureRole: infrastructureRole3,
+      ec2InstanceProfile: instanceProfile3,
+      subnets: vpc3.privateSubnets,
+      scaleInAfter: cdk.Duration.hours(1),
+    });
+
+    Template.fromStack(stack3).hasResourceProperties('AWS::ECS::CapacityProvider', {
+      ManagedInstancesProvider: {
+        InfrastructureOptimization: {
+          ScaleInAfter: 3600,
+        },
+      },
+    });
+  });
+
   test('can disable Managed Scaling and Managed Termination Protection for ASG capacity provider', () => {
     // GIVEN
     const app = new cdk.App();

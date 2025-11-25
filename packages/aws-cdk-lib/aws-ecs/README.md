@@ -1718,6 +1718,31 @@ new ecs.FargateService(this, 'FargateService', {
 });
 ```
 
+You can configure infrastructure optimization to control when ECS scales in (terminates) idle or underutilized instances:
+
+```ts
+declare const infrastructureRole: iam.Role;
+declare const instanceProfile: iam.InstanceProfile;
+declare const vpc: ec2.Vpc;
+
+const miCapacityProvider = new ecs.ManagedInstancesCapacityProvider(this, 'MICapacityProvider', {
+  infrastructureRole,
+  ec2InstanceProfile: instanceProfile,
+  subnets: vpc.privateSubnets,
+  // Configure the delay before scaling in instances after they become idle
+  scaleInAfter: cdk.Duration.minutes(5),
+});
+```
+
+The `scaleInAfter` property allows you to configure a delay before ECS can scale in (terminate) instances
+after a previous scale-in operation. This helps prevent rapid scaling oscillations and gives your workload
+time to stabilize. A longer delay increases the likelihood of placing new tasks on idle instances, reducing
+startup time. A shorter delay helps reduce infrastructure costs by optimizing idle instances more quickly.
+
+Valid values:
+- Not specified: Uses the default optimization behavior
+- `Duration.seconds(0)` to `Duration.hours(1)`: Specifies the delay before optimizing instances
+
 You can specify detailed instance requirements to control which types of instances are used:
 
 ```ts
