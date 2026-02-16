@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as cdk from 'aws-cdk-lib';
-import { CfnResource } from 'aws-cdk-lib';
+import type { CfnResource } from 'aws-cdk-lib';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { IntegTest } from '@aws-cdk/integ-tests-alpha';
 
