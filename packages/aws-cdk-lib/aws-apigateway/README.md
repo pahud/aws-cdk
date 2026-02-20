@@ -1312,7 +1312,7 @@ Additional requirements for creating multi-level path mappings for RestApis:
 
 (both are defaults)
 
-- Must use `SecurityPolicy.TLS_1_2`
+- Must use `SecurityPolicy.TLS_1_2` or higher (TLS 1.0 is not supported for multi-level paths)
 - DomainNames must be `EndpointType.REGIONAL`
 
 ```ts

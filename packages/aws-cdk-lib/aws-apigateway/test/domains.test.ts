@@ -1,5 +1,4 @@
 import { Match, Template } from '../../assertions';
-import * as apigwv2 from '../../aws-apigatewayv2';
 import * as acm from '../../aws-certificatemanager';
 import { Bucket } from '../../aws-s3';
 import { Fn, Stack } from '../../core';
@@ -955,26 +954,6 @@ describe('domains', () => {
         'Ref': 'specRestApiWithStageDeploymentStageprod2D3037ED',
       },
     });
-  });
-
-  test('throws if HTTP API is mapped to domain with enhanced security policy', () => {
-    // GIVEN
-    const stack = new Stack();
-    const httpApi = new apigwv2.HttpApi(stack, 'http-api');
-
-    const domain = new apigw.DomainName(stack, 'Domain', {
-      domainName: 'foo.com',
-      certificate: acm.Certificate.fromCertificateArn(stack, 'cert', 'arn:aws:acm:us-east-1:1111111:certificate/11-3336f1-44483d-adc7-9cd375c5169d'),
-      securityPolicy: apigw.SecurityPolicy.TLS13_1_3_2025_09,
-      endpointAccessMode: apigw.EndpointAccessMode.STRICT,
-    });
-
-    // WHEN/THEN
-    expect(() => {
-      domain.addApiMapping(httpApi.defaultStage! as any, {
-        basePath: 'v1/my-api',
-      });
-    }).toThrow(/HTTP APIs cannot be mapped to domain names with enhanced security policies/);
   });
 
   test('allows REST API to be mapped with enhanced security policy and multi-level base path', () => {
