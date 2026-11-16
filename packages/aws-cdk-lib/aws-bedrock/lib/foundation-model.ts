@@ -614,9 +614,6 @@ export class FoundationModelIdentifier {
   /** Base model "moonshotai.kimi-k2.5". */
   public static readonly MOONSHOT_KIMI_K2_5 = new FoundationModelIdentifier('moonshotai.kimi-k2.5');
 
-  /** Base model "moonshot.kimi-k2-thinking". */
-  public static readonly MOONSHOT_KIMI_K2_THINKING = new FoundationModelIdentifier('moonshot.kimi-k2-thinking');
-
   /** Base model "zai.glm-4.7". */
   public static readonly ZAI_GLM_4_7 = new FoundationModelIdentifier('zai.glm-4.7');
 
